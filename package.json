@@ -11,7 +11,7 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p packages/judgment/tsconfig.json --noEmit && tsc -p packages/policy/tsconfig.json --noEmit",
+    "typecheck": "tsc -p packages/judgment/tsconfig.json --noEmit && tsc -p packages/policy/tsconfig.json --noEmit && tsc -p packages/workspace/tsconfig.json --noEmit",
     "judgment": "vitest run packages/judgment"
   },
   "devDependencies": {

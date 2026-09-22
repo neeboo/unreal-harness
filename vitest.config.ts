@@ -10,7 +10,7 @@ export default defineConfig({
      * vitest at them here would fail on unresolvable peers rather than on
      * anything real.
      */
-    include: ['packages/judgment/tests/**/*.spec.ts', 'packages/policy/tests/**/*.spec.ts'],
+    include: ['packages/judgment/tests/**/*.spec.ts', 'packages/policy/tests/**/*.spec.ts', 'packages/workspace/tests/**/*.spec.ts'],
     pool: 'forks',
     passWithNoTests: false,
   },
