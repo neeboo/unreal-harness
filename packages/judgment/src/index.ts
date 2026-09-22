@@ -70,5 +70,32 @@ export type { ChunkFeature, HeuristicRequest, HeuristicThresholds } from './heur
 export { ASSUMED_TIER_ORDER, JEV_ENDPOINT, JEV_PINNED_MODEL, JevProvider, JevRequestError, ValueError } from './jev.ts'
 export type { JevProviderOptions } from './jev.ts'
 
+export {
+  ChunkScorer,
+  DEFAULT_CONFIDENCE_FLOOR,
+  reducesContent,
+  summariseVerdicts,
+} from './scorer.ts'
+export type { ChunkScorerOptions, ChunkVerdict, ScoreableChunk } from './scorer.ts'
+
+export { breakEvenReuses, planRebuild } from './cache.ts'
+export type {
+  CacheGeometry,
+  RebuildCandidate,
+  RebuildDecision,
+  RebuildPlan,
+  TokenPrices,
+} from './cache.ts'
+
+export {
+  CapabilityCatalogue,
+  DEFAULT_MATCH_LIMIT,
+} from './catalogue.ts'
+export type {
+  CapabilityEntry,
+  CapabilityMatch,
+  CatalogueOptions,
+} from './catalogue.ts'
+
 export { JEV_CHOICE_TIER_ORDER, TIER_CRITERIA } from './wire.ts'
 export type { JevTier, JevWireAnswer, JevWireRequest, JevWireResponse } from './wire.ts'
