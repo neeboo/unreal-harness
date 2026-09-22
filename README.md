@@ -23,6 +23,7 @@ Two build systems, one repository, and the split is deliberate.
 |---|---|---|
 | `crates/core/` | **Rust** | The decision types: a translator that cannot do I/O, durable versioned operations, a context build that accounts for every reduction |
 | `packages/rsi-trace/` | **TypeScript** | The dsh plugin: `rsi/node` event, `rsi/discoveryTree` projection, `ctx.rsiTrace`, and the replay engine |
+| `packages/rsi-context/` | **TypeScript** | The dsh context policy: scores the session surface, prices the reductions, hands spans to the mounted compaction engine |
 | `packages/judgment/` | TypeScript | Typed cheap judgments: a zero-cost structural provider, a TypeSafe Jev adapter, chunk scoring, cache-aware pricing, a capability catalogue |
 | `packages/policy/` | TypeScript | The dreaming loop: replay-scored policy improvement, β sweeps, a versioned policy store |
 | `packages/workspace/` | TypeScript | Per-node workspace snapshots: hard-linked forks with a copy-on-write boundary |
@@ -60,7 +61,8 @@ beside it and modifies none of it.
 | `ChunkScorer` — four tiers with a confidence gate and an escalation path | ✅ |
 | `cache.ts` — cache-break pricing, `breakEvenReuses` | ✅ |
 | `CapabilityCatalogue` — cheap listing, schemas released on match | ✅ |
-| A `dsh` plugin registering a custom `CompactionEngine` | ⬜ **not built** — the pure decisions are done; the host adapter is not |
+| A `dsh` plugin that reads a live surface and advises reductions | ✅ `packages/rsi-context` (6 tests, inside a dsh checkout) |
+| Registering a custom `CompactionEngine` | ⬜ deliberately not done — `ctx.compaction` is a single service, so this service ADVISES and delegates to whatever engine is mounted instead of colliding with `compaction-basic` |
 | `ConditionalPrompt` + compaction-immune pinning | ⬜ **not built** |
 | Router policy (cost/sensitivity aware) | ⬜ **not built** — the judgment layer it needs is done |
 
@@ -113,8 +115,13 @@ they run inside a `dsh` checkout — see `PHASE0-VERIFICATION.md` for the exact
 wiring, including the four declaration-merge and project-reference details a
 first-time port gets wrong.
 
-Test totals: **120** standalone TypeScript, **18** Rust (16 unit + 2 doc), **15**
-inside the `dsh` checkout.
+Test totals: **120** standalone TypeScript, **18** Rust (16 unit + 2 doc), **21**
+inside the `dsh` checkout (`rsi-trace` 15, `rsi-context` 6).
+
+`packages/rsi-context` also runs only inside a `dsh` checkout, and additionally
+needs the local `@neeboo/*` packages resolved. Neither is published, so a test run
+there means copying `packages/*/lib` into `node_modules/@neeboo/` — see
+`PHASE0-VERIFICATION.md`.
 
 ### Replaying a recorded run
 

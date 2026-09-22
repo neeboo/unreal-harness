@@ -19,7 +19,8 @@
 | | chunk 打分（4 档 + confidence 门控） | `packages/judgment/src/scorer.ts` | ✅ |
 | | cache 感知定价 | `packages/judgment/src/cache.ts` | ✅ |
 | | 能力目录 | `packages/judgment/src/catalogue.ts` | ✅ |
-| | **dsh `CompactionEngine` 插件外壳** | — | ⬜ **未建**（纯决策已就绪，宿主适配未写） |
+| | dsh 活 context 上的建议式策略 | `packages/rsi-context/src/index.ts` | ✅ 6 测试（dsh checkout 内） |
+| | 自注册 `CompactionEngine` | — | ⬜ **刻意不做**：`ctx.compaction` 是单服务，自注册会与 `compaction-basic` 冲突；本服务改为**建议 + 委托** |
 | | **ConditionalPrompt + pinning** | — | ⬜ 未建 |
 | | **Router 策略** | — | ⬜ 未建 |
 | **L4** | 发现树投影 + replay 引擎 | `packages/rsi-trace/src/` | ✅ 15 测试（在 dsh checkout 内） |
@@ -33,12 +34,14 @@
 | | PolicyStore（版本 + 部署指针） | `packages/policy/src/store.ts` | ✅ |
 | | **模型自写策略的沙箱执行** | — | ⬜ 未建（`propose` 是 seam） |
 
-**测试总数**：Rust 18（16 单测 + 2 文档）、独立 TS 包 120、dsh 内 15。
+**测试总数**：Rust 18（16 单测 + 2 文档）、独立 TS 包 120、dsh 内 21（rsi-trace 15 + rsi-context 6）。
 
 **两处必须说清的边界**：
 
-1. **"完成"在 L3/L4/L5 指的是"纯决策层完成"**，不是"在 dsh 里跑起来"。L3 的 chunk 降级要真正生效需要写一个注册到 `ctx.compaction` 的插件（并且要替换 profile patch 里的 `compaction-baseline` 那一行）；L4 要真正重跑节点需要 wet fork；L5 要跑模型写的策略需要接 `ptc-runtime`。这三处都是集成工作，不是算法工作。
-2. **dry replay 与 wet fork 的区别仍然是最重要的一条**：dry replay 零执行成本，但只能在历史走过的地方做梦；wet fork 能回答因果问题，但要真花算力。目前只有前者。
+1. **L3 的 dsh 适配已完成，但形态与最初设想不同。** 原计划注册自定义 `CompactionEngine`；实测发现 `ctx.compaction` 是单服务，自注册会与 `compaction-basic` 冲突（且会接管摘要生成——那是另一个大得多的职责）。现在 `packages/rsi-context` 是**建议式**的：读 surface、打分、定价、返回 span，`apply()` 把 span 交给已挂载的引擎。这样 dsh 自己的压缩语义（工具配对平衡、durable marker 对、token 核算）保持唯一实现，且不改变任何未选择加入的部署。
+2. **L4 的 wet fork 编排已完成**（`packages/policy/src/wetfork.ts`），但真正执行 attempt 的 `runAttempt` 是部署提供的——那是接 agent/evaluator/sandbox 的工作。
+3. **L5 要跑模型写的策略需要接 `ptc-runtime`**：`propose` 这个 seam 已就绪，接一个会写代码的 proposer 是部署工作。
+4. **dry replay 与 wet fork 的区别仍然是最重要的一条**：dry replay 零执行成本，但只能在历史走过的地方做梦；wet fork 能回答因果问题，但要真花算力。**两者现在都实现了**，区别在于谁来付 wet fork 的钱。
 
 ---
 
