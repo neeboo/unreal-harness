@@ -11,8 +11,9 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p packages/judgment/tsconfig.json --noEmit && tsc -p packages/policy/tsconfig.json --noEmit && tsc -p packages/workspace/tsconfig.json --noEmit",
-    "judgment": "vitest run packages/judgment"
+    "typecheck": "tsc -b",
+    "judgment": "vitest run packages/judgment",
+    "clean": "rm -rf packages/*/lib packages/*/*.tsbuildinfo"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

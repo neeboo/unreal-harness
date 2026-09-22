@@ -1,9 +1,5 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "rootDir": ".",
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true
-  },
-  "include": ["src", "tests"]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "lib" },
+  "include": ["src"]
 }

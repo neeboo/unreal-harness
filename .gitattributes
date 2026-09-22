@@ -14,3 +14,7 @@
 *.webp binary
 *.pdf binary
 *.zst binary
+
+# Generated measurements are diffed and reviewed; keep them LF.
+*.json text eol=lf
+*.html text eol=lf

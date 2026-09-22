@@ -13,6 +13,12 @@ dist/
 coverage/
 .vitest/
 
+# --- benchmark runs ---
+# measurements.json IS committed (it is the evidence); the generated HTML is
+# reproducible from it, so it is not.
+bench-out/**/report.html
+bench-out/**/report.md
+
 # --- local harness home (never commit a real one) ---
 .dsh/
 .dsh-home/

@@ -1,0 +1,119 @@
+{
+  "startedAt": "2026-09-22T22:06:48.468Z",
+  "model": "deepseek-flash",
+  "effort": "low",
+  "budget": {
+    "rounds": 3,
+    "branchCount": 3,
+    "refineCount": 1,
+    "attemptsPerRound": 6,
+    "maxParallelism": 3
+  },
+  "seed": {
+    "source": "/**\n * Rolling maximum over a sliding window.\n *\n * Correct but deliberately naive: rescans each window from scratch.\n * @param {number[]} values - the input series.\n * @param {number} windowSize - the window length, at least 1.\n * @returns {number[]} the maximum of each window, in order.\n */\nexport function rollingMax(values, windowSize) {\n  const out = []\n  for (let i = 0; i + windowSize <= values.length; i += 1) {\n    let best = -Infinity\n    for (let j = i; j < i + windowSize; j += 1) {\n      if (values[j] > best) best = values[j]\n    }\n    out.push(best)\n  }\n  return out\n}\n",
+    "speedup": 1
+  },
+  "heldOutInstances": [
+    "hold-ramp-wide",
+    "hold-noisy-wide",
+    "hold-sawtooth",
+    "hold-window-one",
+    "hold-window-all"
+  ],
+  "arms": [
+    {
+      "armId": "fixed",
+      "bestSpeedup": 12.167187113803202,
+      "agentCalls": 18,
+      "providerCalls": 18,
+      "promptTokens": 7045,
+      "completionTokens": 63828,
+      "cachedPromptTokens": 1792,
+      "wallMs": 315951,
+      "deployed": [
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy"
+      ],
+      "curve": [
+        11.038779872539036,
+        12.102085221761836,
+        12.167187113803202
+      ],
+      "improvements": 8
+    },
+    {
+      "armId": "dream",
+      "bestSpeedup": 12.053854531565724,
+      "agentCalls": 18,
+      "providerCalls": 18,
+      "promptTokens": 7312,
+      "completionTokens": 53958,
+      "cachedPromptTokens": 1664,
+      "wallMs": 263743,
+      "deployed": [
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy"
+      ],
+      "curve": [
+        12.053854531565724,
+        11.940962524920062,
+        10.302337080947225
+      ],
+      "improvements": 7
+    }
+  ],
+  "equalAttempts": true,
+  "dreamSelections": [
+    {
+      "round": 1,
+      "selected": "fixed-greedy",
+      "scores": []
+    },
+    {
+      "round": 2,
+      "selected": "fixed-greedy",
+      "scores": [
+        {
+          "policyId": "fixed-greedy",
+          "meanScore": 11.853854531565723
+        },
+        {
+          "policyId": "breadth-first",
+          "meanScore": 11.853854531565723
+        },
+        {
+          "policyId": "parallel",
+          "meanScore": 11.853854531565723
+        },
+        {
+          "policyId": "serial",
+          "meanScore": 11.853854531565723
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "selected": "fixed-greedy",
+      "scores": [
+        {
+          "policyId": "fixed-greedy",
+          "meanScore": 11.797408528242892
+        },
+        {
+          "policyId": "breadth-first",
+          "meanScore": 11.797408528242892
+        },
+        {
+          "policyId": "parallel",
+          "meanScore": 11.797408528242892
+        },
+        {
+          "policyId": "serial",
+          "meanScore": 11.797408528242892
+        }
+      ]
+    }
+  ]
+}

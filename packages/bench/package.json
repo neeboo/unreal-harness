@@ -1,0 +1,49 @@
+{
+  "name": "@neeboo/unreal-harness-bench",
+  "description": "The benchmark: DeepSeek-driven A/B between fixed exploration and Dream-RSI, with a real code-optimization task and an out-of-process evaluator",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/index.d.ts",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neeboo/unreal-harness.git",
+    "directory": "packages/bench"
+  },
+  "keywords": [
+    "benchmark",
+    "rsi",
+    "dreaming",
+    "deepseek",
+    "ab-test"
+  ],
+  "scripts": {
+    "bench": "node --experimental-strip-types src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "@neeboo/unreal-harness-policy": "workspace:*"
+  },
+  "bin": {
+    "unreal-harness-bench": "lib/cli.js"
+  }
+}
