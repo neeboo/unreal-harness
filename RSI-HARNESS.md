@@ -25,14 +25,15 @@
 | **L4** | 发现树投影 + replay 引擎 | `packages/rsi-trace/src/` | ✅ 15 测试（在 dsh checkout 内） |
 | | replay 保真度（在线一致 + 负向对照） | `packages/rsi-trace/tests/replay-fidelity.spec.ts` | ✅ |
 | | workspace 快照 + CoW + 树级 GC | `packages/workspace/src/snapshot.ts` | ✅ 16 测试 |
-| | **wet fork（真实重跑节点）** | — | ⬜ **未建**（dry replay 已完成） |
+| | wet fork（成对/多样分叉真实执行 + 结果对比） | `packages/policy/src/wetfork.ts` | ✅ 15 测试 |
+| | **wet fork 接到真实 agent+evaluator** | — | ⬜ 未建（编排与对比已完成，提供可执行的 `runAttempt` 是部署工作） |
 | **L5** | replay 引擎（独立实现） | `packages/policy/src/replay.ts` | ✅ 30 测试 |
 | | dreaming 闭环 + 有界单调性 | `packages/policy/src/dream.ts` | ✅ |
 | | β 扫描 + degenerate 检测 | `packages/policy/src/dream.ts` | ✅ |
 | | PolicyStore（版本 + 部署指针） | `packages/policy/src/store.ts` | ✅ |
 | | **模型自写策略的沙箱执行** | — | ⬜ 未建（`propose` 是 seam） |
 
-**测试总数**：Rust 18（16 单测 + 2 文档）、独立 TS 包 105、dsh 内 15。
+**测试总数**：Rust 18（16 单测 + 2 文档）、独立 TS 包 120、dsh 内 15。
 
 **两处必须说清的边界**：
 

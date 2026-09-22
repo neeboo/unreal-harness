@@ -64,7 +64,7 @@ beside it and modifies none of it.
 | `ConditionalPrompt` + compaction-immune pinning | ⬜ **not built** |
 | Router policy (cost/sensitivity aware) | ⬜ **not built** — the judgment layer it needs is done |
 
-### L4 — World model · **✅ read path complete, execution path partial**
+### L4 — World model · **✅ complete in logic; execution is the deployment's**
 
 | Component | State |
 |---|---|
@@ -73,7 +73,9 @@ beside it and modifies none of it.
 | Replay fidelity: reproduces an online trajectory *and* discriminates | ✅ verified against a real session |
 | Deterministic replay engine (duplicate of the above, standalone) | ✅ `packages/policy` |
 | Per-node workspace snapshots, hard-linked, CoW boundary, tree-level GC | ✅ `packages/workspace` |
-| **Wet fork** — actually re-running a node rather than reasoning about it | ⬜ **not built** — this is the honest gap. Dry replay is done; the paired-fork executor is not |
+| **Wet fork** — run attempts instead of reasoning about recorded ones | ✅ `packages/policy/src/wetfork.ts` |
+| Fork comparison discipline (interleaved arms, required noise floor, regression ≠ tie, inconclusive on missing data) | ✅ |
+| **Wet fork wired to a live agent + evaluator** (`runAttempt`) | ⬜ **not built** — the orchestration and comparison are done; supplying a real agent-executing `runAttempt` is deployment work |
 
 ### L5 — Meta-policy · **✅ core complete**
 
@@ -110,6 +112,9 @@ pnpm typecheck
 they run inside a `dsh` checkout — see `PHASE0-VERIFICATION.md` for the exact
 wiring, including the four declaration-merge and project-reference details a
 first-time port gets wrong.
+
+Test totals: **120** standalone TypeScript, **18** Rust (16 unit + 2 doc), **15**
+inside the `dsh` checkout.
 
 ### Replaying a recorded run
 
