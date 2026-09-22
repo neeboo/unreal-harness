@@ -90,3 +90,20 @@ export type {
 
 export { PolicyStore, PolicyStoreError } from './store.ts'
 export type { PolicyRecord } from './store.ts'
+
+export {
+  WetForkError,
+  actionabilityGaps,
+  recordForkAsNodes,
+  wetFork,
+} from './wetfork.ts'
+export type {
+  ArmSummary,
+  AttemptRequest,
+  AttemptResult,
+  ComparisonOutcome,
+  ForkArm,
+  ForkCondition,
+  WetForkOptions,
+  WetForkResult,
+} from './wetfork.ts'
