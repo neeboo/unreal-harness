@@ -1,0 +1,19 @@
+{
+  "name": "unreal-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RSI-Harness: recursive self-improvement for coding agents, as an out-of-tree @deepseek-ai/dsh plugin family",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neeboo/unreal-harness.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "echo 'Run tests inside a dsh checkout: pnpm exec vitest run packages/rsi/rsi-trace' && exit 1",
+    "typecheck": "echo 'Typecheck inside a dsh checkout: pnpm run build:lib:host' && exit 1"
+  }
+}

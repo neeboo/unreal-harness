@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build output
+lib/
+dist/
+*.tsbuildinfo
+
+# test / coverage
+coverage/
+.vitest/
+
+# local harness home (never commit a real one)
+.dsh/
+.dsh-home/
+
+# editor / OS
+.DS_Store
+.idea/
+*.swp

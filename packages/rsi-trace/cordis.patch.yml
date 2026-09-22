@@ -1,0 +1,11 @@
+# The dsh-rsi-trace bundle patch.
+#
+# One insert over the profile root. A profile that stacks this bundle gets the
+# discovery-tree projection and its reader; later layers address the row by id.
+#
+# Row order carries no load semantics (activation is service-availability
+# driven), so this bundle stays a single row.
+
+- insert:
+    - id: rsi-trace
+      name: '@deepseek-ai/dsh-rsi-trace'

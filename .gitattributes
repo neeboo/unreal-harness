@@ -1,0 +1,16 @@
+# Normalize every text file to LF in the repository.
+#
+# This is not cosmetic. `core.autocrlf=true` rewrites LF to CRLF on checkout,
+# which silently changes file content: it already broke a golden-file test in a
+# sibling project whose expectation was a literal LF. Any repo containing
+# snapshots, fixtures, or byte-compared expectations must pin this.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending translated.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.zst binary
