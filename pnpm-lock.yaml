@@ -30,6 +30,18 @@ importers:
         specifier: ^4.1.8
         version: 4.1.11(@types/node@24.13.6)(vite@8.3.0(@types/node@24.13.6))
 
+  packages/policy:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.6
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.8
+        version: 4.1.11(@types/node@24.13.6)(vite@8.3.0(@types/node@24.13.6))
+
   packages/rsi-trace:
     dependencies:
       zod:

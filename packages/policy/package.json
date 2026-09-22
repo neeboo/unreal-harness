@@ -1,0 +1,46 @@
+{
+  "name": "@neeboo/unreal-harness-policy",
+  "description": "The dreaming loop: improve how an agent explores, offline, from what it already recorded",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neeboo/unreal-harness.git",
+    "directory": "packages/policy"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "agent",
+    "rsi",
+    "replay",
+    "policy",
+    "dreaming"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {}
+}
