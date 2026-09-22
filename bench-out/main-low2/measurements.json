@@ -1,0 +1,171 @@
+{
+  "startedAt": "2026-09-22T23:12:35.003Z",
+  "model": "deepseek-flash",
+  "effort": "low",
+  "budget": {
+    "rounds": 5,
+    "branchCount": 4,
+    "refineCount": 1,
+    "attemptsPerRound": 8,
+    "maxParallelism": 4
+  },
+  "seed": {
+    "source": "/**\n * Rolling maximum over a sliding window.\n *\n * Correct but deliberately naive: rescans each window from scratch.\n * @param {number[]} values - the input series.\n * @param {number} windowSize - the window length, at least 1.\n * @returns {number[]} the maximum of each window, in order.\n */\nexport function rollingMax(values, windowSize) {\n  const out = []\n  for (let i = 0; i + windowSize <= values.length; i += 1) {\n    let best = -Infinity\n    for (let j = i; j < i + windowSize; j += 1) {\n      if (values[j] > best) best = values[j]\n    }\n    out.push(best)\n  }\n  return out\n}\n",
+    "speedup": 1
+  },
+  "heldOutInstances": [
+    "hold-ramp-wide",
+    "hold-noisy-wide",
+    "hold-sawtooth",
+    "hold-window-one",
+    "hold-window-all"
+  ],
+  "arms": [
+    {
+      "armId": "fixed",
+      "bestSpeedup": 11.982153722675863,
+      "agentCalls": 40,
+      "providerCalls": 40,
+      "promptTokens": 15463,
+      "completionTokens": 133730,
+      "cachedPromptTokens": 4096,
+      "wallMs": 639860,
+      "deployed": [
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy"
+      ],
+      "curve": [
+        10.807812999160754,
+        11.523713109021681,
+        11.982153722675863,
+        11.330938625359266,
+        11.775729188459024
+      ],
+      "improvements": 16
+    },
+    {
+      "armId": "dream",
+      "bestSpeedup": 12.118113920241573,
+      "agentCalls": 40,
+      "providerCalls": 40,
+      "promptTokens": 15421,
+      "completionTokens": 136991,
+      "cachedPromptTokens": 4352,
+      "wallMs": 669790,
+      "deployed": [
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy",
+        "fixed-greedy"
+      ],
+      "curve": [
+        9.703792401584934,
+        11.882254404257223,
+        12.118113920241573,
+        10.578300258469397,
+        11.464988133357979
+      ],
+      "improvements": 14
+    }
+  ],
+  "equalAttempts": true,
+  "dreamSelections": [
+    {
+      "round": 1,
+      "selected": "fixed-greedy",
+      "scores": []
+    },
+    {
+      "round": 2,
+      "selected": "fixed-greedy",
+      "scores": [
+        {
+          "policyId": "fixed-greedy",
+          "meanScore": 9.403792401584933
+        },
+        {
+          "policyId": "serial",
+          "meanScore": 9.403792401584933
+        },
+        {
+          "policyId": "open-heavy",
+          "meanScore": 9.403792401584933
+        },
+        {
+          "policyId": "breadth-first",
+          "meanScore": 9.403792401584933
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "selected": "fixed-greedy",
+      "scores": [
+        {
+          "policyId": "fixed-greedy",
+          "meanScore": 10.493023402921079
+        },
+        {
+          "policyId": "serial",
+          "meanScore": 10.493023402921079
+        },
+        {
+          "policyId": "open-heavy",
+          "meanScore": 10.493023402921079
+        },
+        {
+          "policyId": "breadth-first",
+          "meanScore": 10.493023402921079
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "selected": "fixed-greedy",
+      "scores": [
+        {
+          "policyId": "fixed-greedy",
+          "meanScore": 10.93472024202791
+        },
+        {
+          "policyId": "serial",
+          "meanScore": 10.93472024202791
+        },
+        {
+          "policyId": "open-heavy",
+          "meanScore": 10.93472024202791
+        },
+        {
+          "policyId": "breadth-first",
+          "meanScore": 10.93472024202791
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "selected": "fixed-greedy",
+      "scores": [
+        {
+          "policyId": "fixed-greedy",
+          "meanScore": 10.77061524613828
+        },
+        {
+          "policyId": "serial",
+          "meanScore": 10.77061524613828
+        },
+        {
+          "policyId": "open-heavy",
+          "meanScore": 10.77061524613828
+        },
+        {
+          "policyId": "breadth-first",
+          "meanScore": 10.77061524613828
+        }
+      ]
+    }
+  ]
+}

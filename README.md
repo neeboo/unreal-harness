@@ -27,6 +27,8 @@ Two build systems, one repository, and the split is deliberate.
 | `packages/judgment/` | TypeScript | Typed cheap judgments: a zero-cost structural provider, a TypeSafe Jev adapter, chunk scoring, cache-aware pricing, a capability catalogue |
 | `packages/policy/` | TypeScript | The dreaming loop: replay-scored policy improvement, β sweeps, a versioned policy store |
 | `packages/workspace/` | TypeScript | Per-node workspace snapshots: hard-linked forks with a copy-on-write boundary |
+| `packages/bench/` | TypeScript | The benchmark: a DeepSeek-driven equal-budget A/B, a real code-optimization task, an out-of-process evaluator, and the report generator |
+| `BENCHMARK.md` | — | Which standards apply, what has been measured, what has not, and the exact Harbor commands to close the gap |
 | `RSI-HARNESS.md` | — | The design study: five axes, integration matrix, risks, and the claims that did *not* survive scrutiny |
 | `PHASE0-VERIFICATION.md` | — | Four load-bearing assumptions, each verified against the real `dsh` runtime, with the port details a first-time integrator gets wrong |
 | `verification/` | — | The verification specs, kept as evidence |

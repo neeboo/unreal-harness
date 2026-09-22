@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSI-Harness benchmark — fixed exploration vs Dream-RSI</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --line: #262d36; --ink: #e6edf3;
+    --muted: #8b949e; --accent: #58a6ff; --good: #3fb950; --warn: #d29922; --bad: #f85149;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #ffffff; --panel: #f6f8fa; --line: #d0d7de; --ink: #1f2328; --muted: #656d76; --accent: #0969da; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 19px; margin: 44px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 24px 0 8px; }
+  p, li { color: var(--ink); }
+  .lede { color: var(--muted); margin: 0 0 28px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .meta code { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  .muted { color: var(--muted); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 8px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card .value { font-size: 24px; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .callout { border-left: 3px solid var(--accent); background: var(--panel); padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .callout.good { border-left-color: var(--good); }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout.bad { border-left-color: var(--bad); }
+  .callout strong { display: block; margin-bottom: 4px; }
+  ul { padding-left: 20px; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Does the Dream-RSI loop work here?</h1>
+  <p class="lede">A two-arm, equal-attempt-budget A/B on a real code-optimization task. The model, the task, the seed code, and the evaluator are identical in both arms; the only difference is which recorded attempt each new attempt continues from.</p>
+  <div class="meta">
+    <span>run <code>2026-09-22T22:06:48.468Z</code></span>
+    <span>model <code>deepseek-flash</code> · effort <code>low</code></span>
+    <span>budget 3 rounds × 6 attempts</span>
+    <span>parallelism 3</span>
+    <span>held-out instances 5</span>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="label">Fixed exploration</div>
+      <div class="value">12.167×</div>
+      <div class="sub">best held-out speedup</div>
+    </div>
+    <div class="card">
+      <div class="label">Dream-RSI</div>
+      <div class="value">12.054×</div>
+      <div class="sub">-0.113× vs fixed</div>
+    </div>
+    <div class="card">
+      <div class="label">Attempts</div>
+      <div class="value">18 / 18</div>
+      <div class="sub">equal — premise held</div>
+    </div>
+    <div class="card">
+      <div class="label">Tokens</div>
+      <div class="value">9,603</div>
+      <div class="sub">fewer than fixed</div>
+    </div>
+  </div>
+
+  <div class="callout good"><strong>Premise held</strong>Both arms executed the same number of attempts, so the speedup comparison is like-for-like. Any difference is the exploration policy, not the work.</div>
+
+  <div class="callout warn"><strong>The candidate pool was degenerate</strong>Every candidate policy scored identically on the recorded history. The dreaming had nothing to choose between, so this run measures the benchmark's design rather than the loop. A "no difference" result here is <em>not</em> evidence about Dream-RSI.</div>
+
+  <h2>Headline</h2>
+  <table>
+    <thead><tr>
+      <th>arm</th><th class="num">best speedup</th><th class="num">attempts</th><th class="num">provider calls</th>
+      <th class="num">input tokens</th><th class="num">output tokens</th><th class="num">cached input</th>
+      <th class="num">wall</th><th class="num">improvements</th>
+    </tr></thead>
+    <tbody><tr>
+      <td><code>fixed</code></td>
+      <td class="num">12.167×</td>
+      <td class="num">18</td>
+      <td class="num">18</td>
+      <td class="num">7,045</td>
+      <td class="num">63,828</td>
+      <td class="num">1,792</td>
+      <td class="num">316.0s</td>
+      <td class="num">8</td>
+    </tr><tr>
+      <td><code>dream</code></td>
+      <td class="num">12.054×</td>
+      <td class="num">18</td>
+      <td class="num">18</td>
+      <td class="num">7,312</td>
+      <td class="num">53,958</td>
+      <td class="num">1,664</td>
+      <td class="num">263.7s</td>
+      <td class="num">7</td>
+    </tr></tbody>
+  </table>
+  <p class="muted">Quality is median held-out runtime, measured out of process on inputs the agent never saw. Correctness is a gate: a wrong answer has no runtime and counts as a failure. "Improvements" counts attempts that produced correct, faster code.</p>
+
+  <h2>Discovery curve</h2>
+  <p>Best held-out speedup after each round. Round 1 is identical by design — the dream arm starts from the same incumbent policy — so any divergence after round 1 is the dreaming.</p>
+  <table>
+    <thead><tr><th class="num">round</th><th class="num">fixed</th><th class="num">dream</th><th>deployed by dream</th><th class="num">distinct scores</th></tr></thead>
+    <tbody><tr>
+      <td class="num">1</td>
+      <td class="num">11.039×</td>
+      <td class="num">12.054×</td>
+      <td><code>fixed-greedy</code></td>
+      <td class="num">0</td>
+    </tr><tr>
+      <td class="num">2</td>
+      <td class="num">12.102×</td>
+      <td class="num">11.941×</td>
+      <td><code>fixed-greedy</code></td>
+      <td class="num">1</td>
+    </tr><tr>
+      <td class="num">3</td>
+      <td class="num">12.167×</td>
+      <td class="num">10.302×</td>
+      <td><code>fixed-greedy</code></td>
+      <td class="num">1</td>
+    </tr></tbody>
+  </table>
+
+  <h2>What the dreaming chose</h2>
+  <p>Each row is the offline replay evaluation that decided the next round's policy. Scores are the replay objective over the recorded trees: best realized speedup, minus a cost term for attempts, plus a parallelism bonus for reaching it in fewer decision rounds. Dreaming issues <strong>no model calls</strong> — it only reads recorded attempts.</p>
+  <table>
+    <thead><tr><th class="num">round</th><th>deployed</th><th class="num"><code>breadth-first</code></th><th class="num"><code>fixed-greedy</code></th><th class="num"><code>parallel</code></th><th class="num"><code>serial</code></th></tr></thead>
+    <tbody><tr>
+      <td class="num">1</td>
+      <td><code>fixed-greedy</code></td>
+      <td class="num"><span class="muted">—</span></td><td class="num"><span class="muted">—</span></td><td class="num"><span class="muted">—</span></td><td class="num"><span class="muted">—</span></td>
+    </tr><tr>
+      <td class="num">2</td>
+      <td><code>fixed-greedy</code></td>
+      <td class="num">11.8539</td><td class="num">11.8539</td><td class="num">11.8539</td><td class="num">11.8539</td>
+    </tr><tr>
+      <td class="num">3</td>
+      <td><code>fixed-greedy</code></td>
+      <td class="num">11.7974</td><td class="num">11.7974</td><td class="num">11.7974</td><td class="num">11.7974</td>
+    </tr></tbody>
+  </table>
+
+  <h2>What this does not measure</h2>
+  <ul>
+    <li><strong>Not a public benchmark.</strong> This is not Terminal-Bench 4.0, DeepSWE 1.1, SWE-Atlas QnA, or ALE-CLI. Those need Harbor plus a container runtime; the design and the exact commands are in <code>BENCHMARK.md</code>.</li>
+    <li><strong>Not "better than a bare harness".</strong> That comparison is <code>dsh</code> versus <code>dsh</code> plus these plugins on a public dataset. It is designed and not yet run.</li>
+    <li><strong>Not the paper's full loop.</strong> The candidate pool here is hand-written strategies, so replay-based <em>selection</em> is exercised and an LLM <em>proposing new policy code</em> is not. That is the one step standing between this and the paper's claim.</li>
+    <li><strong>No absolute number means anything alone.</strong> These are properties of a rolling-maximum task with a <code>node</code> evaluator. Only the comparison between arms is informative, and only because they are otherwise identical.</li>
+  </ul>
+
+  <footer>
+    Generated by <code>packages/bench</code> from <code>measurements.json</code>. Every figure on this page is read from that file; none is typed by hand.
+  </footer>
+</main>
+</body>
+</html>

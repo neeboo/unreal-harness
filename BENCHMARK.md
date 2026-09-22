@@ -80,22 +80,61 @@ the **only** difference is which node each attempt continues from.
 
 ### The result
 
-See [`bench-out/main-low/report.md`](bench-out/main-low/report.md) for the run that
-produced these, with the discovery curve and the per-round replay scores.
+[`bench-out/main-low2/report.html`](bench-out/main-low2/report.html) is the full page;
+[`measurements.json`](bench-out/main-low2/measurements.json) is the raw data.
+`deepseek-flash`, effort `low`, 5 rounds × 8 attempts (40 attempts per arm), held-out
+evaluator, `equalAttempts: true`.
 
-**Dream-RSI's mechanism works and its selection is monotone; on this task it had
-nothing to improve.** Two facts, and the second matters as much as the first:
+| arm | best speedup | attempts | input tokens | output tokens | improvements | wall |
+|---|---:|---:|---:|---:|---:|---:|
+| `fixed` | 11.982× | 40 | 15,463 | 133,730 | 16 | 640s |
+| `dream` | 12.118× | 40 | 15,421 | 136,991 | 14 | 670s |
 
-1. **The loop is doing its job.** Replaying 0 → 1 → 2 → … recorded worlds, the
-   selection rule always kept the incumbent, and it is never worse on the recorded
-   history than the policy it started from. That is the paper's guarantee, observed.
-2. **The incumbent was already the best policy in the pool.** The four candidates
-   differ in *when* they spend attempts, and with a fixed attempt budget they explore
-   the same amount of tree — so the dreaming had no headroom to find.
+Two findings, and the second is the one a reader should act on.
 
-The honest reading: **this run validates the loop, not the payoff.** A payoff needs
-either a candidate pool containing a genuinely better policy, or a budget model
-where allocation actually differs (§4.1).
+**1. The loop works.** Replaying 0 → 1 → 2 → 3 → 4 recorded worlds, the selection
+rule kept the incumbent every round, and the arm's quality never fell below the
+baseline's. That is the paper's guarantee observed rather than argued: because the
+candidate set includes the incumbent, the deployed policy is never worse **on the
+recorded history**.
+
+**2. The candidate pool never discriminated, so the dreaming had nothing to choose.**
+Every round's four candidates scored *identically* (`distinct = 1` in the report's
+own diagnostic): 9.404, 10.493, 10.935, 10.771. The dreaming was correct to keep the
+incumbent — there was no better policy to find.
+
+The cause is structural, and adding a candidate did not fix it:
+
+> **In a recorded tree every node has at most one child.** An attempt produces one
+> node, so a policy's choice of *which* node to select changes the *order* in which
+> the subtree is revealed, not *which* subtree it is. With an equal attempt budget,
+> four policies that spend the budget differently still reveal the same set of nodes
+> — so they measure the same best score and the same replay value.
+
+That is why `distinct` is printed per round on the report page: a reader must be able
+to tell **"the loop found no improvement"** from **"the loop had nothing to choose
+between"**, and those two look identical in a table of final numbers.
+
+**So what is established, precisely:** the loop, the replay scoring, the monotone
+selection, and the deployment all run on a real model with real generated code and a
+real out-of-process evaluator. What is **not** established is that the dreaming
+*improves* anything, and this benchmark as built cannot establish it — not because the
+loop failed, but because its input has no signal to exploit.
+
+### 4.0.1 What would give the pool signal
+
+Three routes, in increasing order of how much they change:
+
+1. **A tree with branch points.** Record *rejected* alternatives — attempts that ran
+   and were not selected — as siblings rather than children. Then a policy's ordering
+   choice reveals genuinely different outcomes, and replay can rank them. This is the
+   natural next step and does not require a model.
+2. **A budget model where allocation differs.** Under an equal-**round** budget, a
+   batching policy executes more attempts in the same decision rounds. Then the
+   candidates differ by construction. §4.1.
+3. **A policy that allocates differently by *kind*.** E.g. one that deepens only
+   after a score improves, versus one that always deepens. Under a fixed attempt
+   budget these differ only if scores are branch-dependent — which route 1 supplies.
 
 ### 4.1 The budget model decides which question you are asking
 
@@ -109,29 +148,6 @@ Reporting only the first would hide the batching effect; only the second would
 compare different amounts of work and call it efficiency. Both must be reported, and
 labelled.
 
-### 4.1.1 A structural limit found while building this: sparse branching
-
-A first candidate pool varied only *batching*, and every candidate scored identically
-— the report now prints a `distinguishing` column so this cannot pass unnoticed. The
-cause is structural, not a bug:
-
-**In a recorded tree every node has at most one child**, because that is how the
-online arm built it: one selection produces one attempt, which becomes one node. So
-replaying different policies over one world mostly reveals **the same subtree**, and a
-policy's choice of *which* node to select changes the order, not the content. On top
-of that, `legalRoots()` is bounded by `branchCount`, so once the branches are open the
-only remaining freedom is how much refining the budget buys.
-
-The consequence is narrow but real: **with an equal attempt budget and this task's
-branching, policies that differ only in ordering cannot be told apart by replay.** A
-pool must differ in *where the budget goes* — how much deepening versus how much fresh
-lineage — for the dreaming to have a choice. The pool now spans that axis, and the
-report states per round whether it discriminated, so a reader can tell "the loop found
-no improvement" from "the loop had nothing to choose between".
-
-Recording *rejected* alternatives would widen the pool further, and is the natural
-next step: a world with branch points is a world where ordering matters.
-
 ### 4.2 Why the candidate pool is hand-written, and what that leaves untested
 
 That is the one thing this run does **not** exercise. The paper's proposer is an LLM
@@ -143,7 +159,7 @@ piece of work, but until it is done the claim "Dream-RSI improves exploration" i
 **not** established by this benchmark — only "the loop runs, scores, selects, and
 improves monotonically".
 
-## 4.3 The four-level ladder: what "everything works" has to mean
+### 4.3 The four-level ladder: what "everything works" has to mean
 
 "The whole thing works" is four separate claims, each with its own experiment. They
 are ordered because a higher level is uninterpretable if a lower one fails.
@@ -152,7 +168,7 @@ are ordered because a higher level is uninterpretable if a lower one fails.
 |---|---|---|---|
 | **L0 — mechanism** | The replay → evaluate → select → deploy loop runs and never regresses on recorded history | Two-arm equal-attempt A/B on a real task with an out-of-process evaluator | ✅ **Measured** (§4) |
 | **L1 — overhead** | Mounting the plugins does not make a session more expensive | Same task through `dsh` headless with and without the plugins mounted; compare tokens and turns | ⬜ Designed (§5.5) |
-| **L2 — routing** | A policy chosen by replay beats a hand-written fixed strategy at equal compute | The L0 A/B with a candidate pool that actually discriminates | ⏳ Running |
+| **L2 — routing** | A policy chosen by replay beats a hand-written fixed strategy at equal compute | The L0 A/B with a candidate pool that actually discriminates | ❌ **Ran; pool degenerate** — so L2 is not yet testable, see §4.0.1 |
 | **L3 — public** | `dsh` + plugins beats bare `dsh` on a public benchmark | Harbor: Terminal-Bench 4.0 / DeepSWE 1.1 / SWE-Atlas QnA, two profiles | ⬜ Blocked on Docker + a frontier key (§5) |
 
 Two properties of this ladder matter more than the rows:
