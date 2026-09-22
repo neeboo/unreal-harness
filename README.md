@@ -22,8 +22,8 @@ Two build systems, one repository, and the split is deliberate.
 | Path | Ecosystem | What it is |
 |---|---|---|
 | `crates/core/` | **Rust** | The decision types: a translator that cannot do I/O, durable versioned operations, a context build that accounts for every reduction |
-| `packages/rsi-trace/` | **TypeScript** | The dsh plugin: `rsi/node` event, `rsi/discoveryTree` projection, `ctx.rsiTrace`, and the replay engine |
-| `packages/rsi-context/` | **TypeScript** | The dsh context policy: scores the session surface, prices the reductions, hands spans to the mounted compaction engine |
+| `dsh-plugins/rsi-trace/` | **TypeScript** | The dsh plugin: `rsi/node` event, `rsi/discoveryTree` projection, `ctx.rsiTrace`, and the replay engine. Built inside a dsh checkout |
+| `dsh-plugins/rsi-context/` | **TypeScript** | The dsh context policy: scores the session surface, prices the reductions, hands spans to the mounted compaction engine. Built inside a dsh checkout — see [`dsh-plugins/README.md`](dsh-plugins/README.md) |
 | `packages/judgment/` | TypeScript | Typed cheap judgments: a zero-cost structural provider, a TypeSafe Jev adapter, chunk scoring, cache-aware pricing, a capability catalogue |
 | `packages/policy/` | TypeScript | The dreaming loop: replay-scored policy improvement, β sweeps, a versioned policy store |
 | `packages/workspace/` | TypeScript | Per-node workspace snapshots: hard-linked forks with a copy-on-write boundary |
@@ -110,7 +110,7 @@ pnpm test        # 105 tests across judgment, policy, workspace
 pnpm typecheck
 ```
 
-`packages/rsi-trace` is a `dsh` plugin whose tests mount real `dsh` services, so
+`dsh-plugins/*` are `dsh` plugins whose tests mount real `dsh` services, so
 they run inside a `dsh` checkout — see `PHASE0-VERIFICATION.md` for the exact
 wiring, including the four declaration-merge and project-reference details a
 first-time port gets wrong.
@@ -118,7 +118,7 @@ first-time port gets wrong.
 Test totals: **120** standalone TypeScript, **18** Rust (16 unit + 2 doc), **21**
 inside the `dsh` checkout (`rsi-trace` 15, `rsi-context` 6).
 
-`packages/rsi-context` also runs only inside a `dsh` checkout, and additionally
+`dsh-plugins/rsi-context` additionally
 needs the local `@neeboo/*` packages resolved. Neither is published, so a test run
 there means copying `packages/*/lib` into `node_modules/@neeboo/` — see
 `PHASE0-VERIFICATION.md`.

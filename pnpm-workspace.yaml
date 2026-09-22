@@ -9,6 +9,9 @@
 # does: the Rust core exists to make a TYPE-level guarantee (a translator cannot
 # perform I/O), which TypeScript cannot express; everything else is a plugin.
 
+# Only what builds standalone. dsh plugins live in dsh-plugins/ and are built
+# inside a dsh checkout, because their `workspace:*` dependencies only resolve
+# there; including them here would break install for the whole workspace.
 packages:
   - 'packages/*'
 minimumReleaseAgeExclude:
