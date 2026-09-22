@@ -9,11 +9,14 @@
     "type": "git",
     "url": "git+https://github.com/neeboo/unreal-harness.git"
   },
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
-    "test": "echo 'Run tests inside a dsh checkout: pnpm exec vitest run packages/rsi/rsi-trace' && exit 1",
-    "typecheck": "echo 'Typecheck inside a dsh checkout: pnpm run build:lib:host' && exit 1"
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/judgment/tsconfig.json --noEmit",
+    "judgment": "vitest run packages/judgment"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }

@@ -1,0 +1,35 @@
+# RSI-Harness monorepo
+#
+# Two ecosystems, one repository:
+#   - crates/   the Rust core: pure, synchronous, I/O-free decision types (L1)
+#   - packages/ the dsh plugins: TypeScript, out-of-tree bundles (L3/L4/L5)
+#
+# They are separate build systems on purpose. Rust is cargo, TypeScript is pnpm,
+# and neither imports the other. See README.md for why the split falls where it
+# does: the Rust core exists to make a TYPE-level guarantee (a translator cannot
+# perform I/O), which TypeScript cannot express; everything else is a plugin.
+
+packages:
+  - 'packages/*'
+minimumReleaseAgeExclude:
+  - '@deepseek-ai/cosmokit@1.8.5'
+  - '@deepseek-ai/dsh-agent-loop@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-agent@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-brand@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-invariants@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-llm@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-ptc-runtime@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-sandbox-policy@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-sandbox@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-scope@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-session-persistence@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-session-projection@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-session@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-system-prompt@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-timeout@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-tools@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-typert-protocol@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-user-approval@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-util-crypto@0.1.7-alpha.2'
+  - '@deepseek-ai/dsh-util-values@0.1.7-alpha.2'
+  - '@deepseek-ai/schemastery@3.18.4'

@@ -1,0 +1,44 @@
+{
+  "name": "@neeboo/unreal-harness-judgment",
+  "description": "Typed, cheap judgments for an agent harness: a zero-cost structural provider and a TypeSafe Jev adapter",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neeboo/unreal-harness.git",
+    "directory": "packages/judgment"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "agent",
+    "judgment",
+    "typesafe",
+    "jev"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

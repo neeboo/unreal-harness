@@ -1,20 +1,23 @@
-# dependencies
+# --- Rust ---
+target/
+
+# --- Node ---
 node_modules/
 
-# build output
+# --- build output ---
 lib/
 dist/
 *.tsbuildinfo
 
-# test / coverage
+# --- test / coverage ---
 coverage/
 .vitest/
 
-# local harness home (never commit a real one)
+# --- local harness home (never commit a real one) ---
 .dsh/
 .dsh-home/
 
-# editor / OS
+# --- editor / OS ---
 .DS_Store
 .idea/
 *.swp
