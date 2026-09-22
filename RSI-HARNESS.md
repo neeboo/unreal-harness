@@ -5,6 +5,42 @@
 
 ---
 
+## 实现地图（2026-09 更新）
+
+设计文档写在前面，实现落在下面这些位置。**每一行标注了"已完成"还是"未建"**，因为它们不是同一件事。
+
+| 层 | 组件 | 位置 | 状态 |
+|---|---|---|---|
+| **L1** | 无 I/O 的 translator capability | `crates/core/src/translator.rs` | ✅ 16 单测 + 2 文档测试 |
+| | 版本化 Operation + 至多一次 Manager | `crates/core/src/operation.rs` | ✅ |
+| | 类型化上下文变更报告 | `crates/core/src/context.rs` | ✅ |
+| **L2** | dsh 宿主 | 外部依赖 | ✅ 非本项目 |
+| **L3** | `JudgmentProvider` seam + heuristic + Jev | `packages/judgment/src/{types,heuristic,jev,wire}.ts` | ✅ 59 测试 |
+| | chunk 打分（4 档 + confidence 门控） | `packages/judgment/src/scorer.ts` | ✅ |
+| | cache 感知定价 | `packages/judgment/src/cache.ts` | ✅ |
+| | 能力目录 | `packages/judgment/src/catalogue.ts` | ✅ |
+| | **dsh `CompactionEngine` 插件外壳** | — | ⬜ **未建**（纯决策已就绪，宿主适配未写） |
+| | **ConditionalPrompt + pinning** | — | ⬜ 未建 |
+| | **Router 策略** | — | ⬜ 未建 |
+| **L4** | 发现树投影 + replay 引擎 | `packages/rsi-trace/src/` | ✅ 15 测试（在 dsh checkout 内） |
+| | replay 保真度（在线一致 + 负向对照） | `packages/rsi-trace/tests/replay-fidelity.spec.ts` | ✅ |
+| | workspace 快照 + CoW + 树级 GC | `packages/workspace/src/snapshot.ts` | ✅ 16 测试 |
+| | **wet fork（真实重跑节点）** | — | ⬜ **未建**（dry replay 已完成） |
+| **L5** | replay 引擎（独立实现） | `packages/policy/src/replay.ts` | ✅ 30 测试 |
+| | dreaming 闭环 + 有界单调性 | `packages/policy/src/dream.ts` | ✅ |
+| | β 扫描 + degenerate 检测 | `packages/policy/src/dream.ts` | ✅ |
+| | PolicyStore（版本 + 部署指针） | `packages/policy/src/store.ts` | ✅ |
+| | **模型自写策略的沙箱执行** | — | ⬜ 未建（`propose` 是 seam） |
+
+**测试总数**：Rust 18（16 单测 + 2 文档）、独立 TS 包 105、dsh 内 15。
+
+**两处必须说清的边界**：
+
+1. **"完成"在 L3/L4/L5 指的是"纯决策层完成"**，不是"在 dsh 里跑起来"。L3 的 chunk 降级要真正生效需要写一个注册到 `ctx.compaction` 的插件（并且要替换 profile patch 里的 `compaction-baseline` 那一行）；L4 要真正重跑节点需要 wet fork；L5 要跑模型写的策略需要接 `ptc-runtime`。这三处都是集成工作，不是算法工作。
+2. **dry replay 与 wet fork 的区别仍然是最重要的一条**：dry replay 零执行成本，但只能在历史走过的地方做梦；wet fork 能回答因果问题，但要真花算力。目前只有前者。
+
+---
+
 ## 0. 一句话结论
 
 **能整合，但不是"合并代码库"，而是"一个宿主 + 四个正交轴"，而它们的相对位置由时间决定**：
