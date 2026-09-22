@@ -29,6 +29,7 @@ Two build systems, one repository, and the split is deliberate.
 | `packages/workspace/` | TypeScript | Per-node workspace snapshots: hard-linked forks with a copy-on-write boundary |
 | `packages/bench/` | TypeScript | The benchmark: a DeepSeek-driven equal-budget A/B, a real code-optimization task, an out-of-process evaluator, and the report generator |
 | `BENCHMARK.md` | — | Which standards apply, what has been measured, what has not, and the exact Harbor commands to close the gap |
+| `BENCHMARK-REPORT.html` | — | The rendered result page for the latest run — open it directly, no server needed |
 | `RSI-HARNESS.md` | — | The design study: five axes, integration matrix, risks, and the claims that did *not* survive scrutiny |
 | `PHASE0-VERIFICATION.md` | — | Four load-bearing assumptions, each verified against the real `dsh` runtime, with the port details a first-time integrator gets wrong |
 | `verification/` | — | The verification specs, kept as evidence |
