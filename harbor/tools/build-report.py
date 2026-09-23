@@ -77,13 +77,29 @@ def section_verdict(harbor: dict[str, Any] | None) -> str:
     """The one-paragraph answer, stated before any table."""
     arms = {arm["arm"]: arm for arm in (harbor or {}).get("arms", [])}
     bare, rsi = arms.get("bare"), arms.get("rsi")
-    # An arm with zero *scored* trials would otherwise render as "both arms passed
-    # 0 of 0 -- identical", which is a true statement that reads as a result.
-    if not bare or not rsi or not bare.get("scored") or not rsi.get("scored"):
+
+    # A comparison needs both arms *finished*, not merely present. Rendering a
+    # verdict from a half-complete arm is the worst failure this page could have:
+    # the numbers would be real, the arithmetic correct, and the conclusion
+    # wrong. So the arms must also have run the same number of trials, which is
+    # the property an A/B depends on and which a partial run silently breaks.
+    incomplete = (
+        not bare
+        or not rsi
+        or bare.get("trials", 0) != rsi.get("trials", 0)
+        or not bare.get("scored")
+        or not rsi.get("scored")
+    )
+    if incomplete:
+        done = {arm["arm"]: (arm.get("trials", 0), arm.get("passed", 0)) for arm in (harbor or {}).get("arms", [])}
+        detail = ", ".join(f"{k}: {v[0]} trials, {v[1]} passed" for k, v in sorted(done.items()))
         return (
-            "<p class='pending'>The container A/B has not produced results yet, so this "
-            "page states no comparison. The sections below list what was measured and "
-            "what was not.</p>"
+            "<p class='pending'><strong>The matrix is not finished, so this page states "
+            "no arm comparison.</strong> The tables below are real measurements from the "
+            f"trials that did complete ({esc(detail or 'none')}), but an A/B is only "
+            "meaningful when both arms have run the same trials, and they have not. "
+            "Reading a winner out of a partial matrix is the one mistake this page is "
+            "built to prevent.</p>"
         )
 
     same_pass = bare.get("passed") == rsi.get("passed")
@@ -107,6 +123,30 @@ def section_verdict(harbor: dict[str, Any] | None) -> str:
         "steer the agent, so it cannot change a pass rate. What it does change is "
         "what the run leaves behind — the material the dreaming loop consumes.</p>"
     )
+
+
+def _arm_cost(arm: dict[str, Any]) -> str:
+    """Mean priced cost for an arm, with the sample size when it is partial."""
+    value = fmt_usd(arm.get("mean_cost_usd_priced"), 5)
+    scored, trials = arm.get("scored", 0), arm.get("trials", 0)
+    if scored == trials:
+        return value
+    return f"{value} <span class='note'>({scored}/{trials} measured)</span>"
+
+
+def _task_cost(rows: list[dict[str, Any]]) -> str:
+    """Total priced cost for one task's trials, or an explicit unknown.
+
+    A trial that timed out has no ``agent_result`` at all, so it recorded no
+    token usage and its cost is *unknown*, not zero. Rendering it as ``$0.00000``
+    would read as a free run, which is the opposite of what happened.
+    """
+    priced = [row["cost_usd_priced"] for row in rows if row.get("cost_usd_priced") is not None]
+    if not priced:
+        return f"— ({len(rows)} unmeasured)" if rows else "—"
+    total = sum(priced)
+    missing = len(rows) - len(priced)
+    return fmt_usd(total, 5) + (f" (+{missing} unmeasured)" if missing else "")
 
 
 def section_harbor(harbor: dict[str, Any] | None) -> str:
@@ -178,7 +218,7 @@ def section_harbor(harbor: dict[str, Any] | None) -> str:
             f"<td class='num'>{fmt_int(arm.get('mean_input_tokens'))}</td>"
             f"<td class='num'>{fmt_pct(arm.get('mean_cache_hit_rate'))}</td>"
             f"<td class='num'>{fmt_int(arm.get('mean_output_tokens'))}</td>"
-            f"<td class='num'>{fmt_usd(arm.get('mean_cost_usd_priced'), 5)}</td>"
+            f"<td class='num'>{_arm_cost(arm)}</td>"
             f"<td class='num'>{fmt_num(arm.get('mean_duration_sec'), 1)}s</td>"
             f"<td class='num'>{arm.get('timeouts', 0)}</td>"
             f"<td class='num'>{arm.get('scored_despite_timeout', 0)}</td>"
@@ -186,34 +226,54 @@ def section_harbor(harbor: dict[str, Any] | None) -> str:
             "</tr>"
         )
 
-    # Per-task outcomes, because an aggregate pass rate over five tasks hides
-    # which task did what — and with this few tasks a reader must be able to
-    # recount the total by hand.
+    # Per-task, arm against arm. With this few tasks a reader must be able to
+    # recount the total by hand, and the aggregate alone hides which task moved.
     per_task_header = (
-        "<tr><th>Task</th><th>Bare</th><th>RSI</th><th>Bare cost</th>"
-        "<th>RSI cost</th></tr>"
+        "<tr><th>Task</th><th>Bare</th><th>Bare rate</th>"
+        "<th>RSI</th><th>RSI rate</th><th>Bare cost</th><th>RSI cost</th></tr>"
     )
     per_task_rows = []
     for task in tasks:
-        cells = []
+        cells = {}
         for arm_key in ("bare", "rsi"):
-            matching = [
-                t for t in trials if t["arm"] == arm_key and t.get("task_name", "").endswith(task)
+            task_rows = [
+                t
+                for t in trials
+                if t["arm"] == arm_key and t.get("task_name", "").endswith(task)
             ]
-            scored = [t for t in matching if t.get("reward") is not None]
-            if not scored:
-                cells.append(("—", None))
-            else:
-                passed = sum(1 for t in scored if t["passed"])
-                cost = sum(t.get("cost_usd_priced") or 0 for t in scored)
-                cells.append((f"{passed}/{len(scored)}", cost))
+            passed = sum(1 for t in task_rows if t["passed"])
+            cost = sum(t.get("cost_usd_priced") or 0 for t in task_rows)
+            cells[arm_key] = (
+                f"{passed}/{len(task_rows)}" if task_rows else "—",
+                task_rows,
+                cost,
+            )
         per_task_rows.append(
             "<tr>"
             f"<td class='label'>{esc(task)}</td>"
-            f"<td class='num'>{cells[0][0]}</td>"
-            f"<td class='num'>{cells[1][0]}</td>"
-            f"<td class='num'>{fmt_usd(cells[0][1], 5) if cells[0][1] is not None else '—'}</td>"
-            f"<td class='num'>{fmt_usd(cells[1][1], 5) if cells[1][1] is not None else '—'}</td>"
+            f"<td class='num'>{cells['bare'][0]}</td>"
+            f"<td class='num'>{fmt_pct((sum(1 for t in cells['bare'][1] if t['passed']) / len(cells['bare'][1])) if cells['bare'][1] else None)}</td>"
+            f"<td class='num'>{cells['rsi'][0]}</td>"
+            f"<td class='num'>{fmt_pct((sum(1 for t in cells['rsi'][1] if t['passed']) / len(cells['rsi'][1])) if cells['rsi'][1] else None)}</td>"
+            f"<td class='num'>{_task_cost(cells['bare'][1])}</td>"
+            f"<td class='num'>{_task_cost(cells['rsi'][1])}</td>"
+            "</tr>"
+        )
+
+    # Timeouts are broken out because they are where these two arms differ, and
+    # because "the agent was killed while tidying up" is a solved task.
+    timeout_rows = []
+    for arm_key, label in (("bare", "Bare dsh"), ("rsi", "dsh + RSI trace")):
+        arm_rows = [t for t in trials if t["arm"] == arm_key]
+        if not arm_rows:
+            continue
+        timeout_rows.append(
+            "<tr>"
+            f"<td class='label'>{esc(label)}</td>"
+            f"<td class='num'>{sum(1 for t in arm_rows if t['exception_type'] == 'AgentTimeoutError')}</td>"
+            f"<td class='num'>{sum(1 for t in arm_rows if t['exception_type'] == 'AgentTimeoutError' and t['reward'] is not None)}</td>"
+            f"<td class='num'>{sum(1 for t in arm_rows if t.get('scored_despite_timeout'))}</td>"
+            f"<td class='num'>{sum(1 for t in arm_rows if t['reward'] is None and not t['exception_type'])}</td>"
             "</tr>"
         )
 
@@ -270,6 +330,18 @@ matrix must not straddle the boundary.</p>
 <thead>{per_task_header}</thead>
 <tbody>{''.join(per_task_rows)}</tbody>
 </table>
+
+<h3>How the timeouts break down</h3>
+<p>A timeout is where the two arms could most easily be misread, so it is broken
+out rather than folded into the pass rate.</p>
+<table class="data">
+<thead><tr><th>Arm</th><th>Timed out</th><th>…and still given a reward</th>
+<th>…with a reward above zero</th><th>No reward, no exception</th></tr></thead>
+<tbody>{''.join(timeout_rows)}</tbody>
+</table>
+<p class="note">"With a reward above zero" is the column that matters: it means the
+agent had already finished the task and was killed while tidying up, which is a
+solved task. The other two are failed attempts.</p>
 {error_block}
 """
 
@@ -714,10 +786,10 @@ task. §1.</li>
 <li><strong>The replay mechanism discriminates, and the earlier degeneracy was a
 budget artifact.</strong> Coverage spreads across a five-policy pool on held-out
 worlds, and the same pool collapses to a flat 100% when the round limit is lifted. §2.</li>
-<li><strong>The public-benchmark A/B pipeline is verified, but its matrix did not
-finish.</strong> Both arms completed a container smoke task; a multi-task Terminal-Bench
-comparison needs hours of wall clock because each trial installs the toolchain from
-scratch. No comparative number is claimed. §3.</li>
+<li><strong>The public-benchmark A/B runs, and its matrix is still filling.</strong>
+The toolchain is pre-baked so trials no longer spend their budget installing Node, and
+both arms are producing scored trials on real Terminal-Bench 4.0 tasks. Until both arms
+have run the same trials, this page states no winner. §3.</li>
 </ol>
 {section_verdict(harbor)}
 </section>
