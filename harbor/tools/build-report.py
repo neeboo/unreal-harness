@@ -930,12 +930,14 @@ task. §1.</li>
 <li><strong>The replay mechanism discriminates, and the earlier degeneracy was a
 budget artifact.</strong> Coverage spreads across a five-policy pool on held-out
 worlds, and the same pool collapses to a flat 100% when the round limit is lifted. §2.</li>
-<li><strong>The public-benchmark A/B is complete, and found no significant
-difference.</strong> Six trials per arm on three real Terminal-Bench 4.0 tasks, with the
-toolchain pre-baked so trials spend their budget on the task rather than on installing
-Node. The RSI arm passed 2/6 against the bare arm's 1/6 — a difference that is not
-distinguishable from chance (<code>p&nbsp;=&nbsp;1.00</code>), on a layer that only
-observes the session. §3.</li>
+<li><strong>The public-benchmark comparison has no resolving power, and this is the
+most important line on the page.</strong> Two matrices ran on three real Terminal-Bench
+4.0 tasks: the first with an observational layer (1/6 against 2/6), the second adding a
+layer that puts the session's failed attempts back in the model's context (0/6 against
+0/6). The second cannot separate the arms at all — twelve trials, twelve failures — and
+the timeout counts say why: most attempts were cut off mid-work rather than finishing
+and failing. <strong>The agent budget, not the layers, is what this setup cannot see
+past.</strong> §3.</li>
 </ol>
 {section_verdict(harbor)}
 </section>

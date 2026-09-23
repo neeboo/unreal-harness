@@ -67,7 +67,7 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
   question, and an explicit list of what remains unproven. Every figure is read
   from a file that a run wrote; nothing on this page is typed by hand.</p>
   <div class="meta">
-    Generated 2026-09-23 04:39 UTC · revision <code>1b1c8c1</code> ·
+    Generated 2026-09-23 04:41 UTC · revision <code>3d45b32</code> ·
     model <code>deepseek-flash</code> (DeepSeek-V4.1-Flash) ·
     harness <code>@deepseek-ai/dsh@0.1.7-alpha.2</code>
   </div>
@@ -85,12 +85,14 @@ task. §1.</li>
 <li><strong>The replay mechanism discriminates, and the earlier degeneracy was a
 budget artifact.</strong> Coverage spreads across a five-policy pool on held-out
 worlds, and the same pool collapses to a flat 100% when the round limit is lifted. §2.</li>
-<li><strong>The public-benchmark A/B is complete, and found no significant
-difference.</strong> Six trials per arm on three real Terminal-Bench 4.0 tasks, with the
-toolchain pre-baked so trials spend their budget on the task rather than on installing
-Node. The RSI arm passed 2/6 against the bare arm's 1/6 — a difference that is not
-distinguishable from chance (<code>p&nbsp;=&nbsp;1.00</code>), on a layer that only
-observes the session. §3.</li>
+<li><strong>The public-benchmark comparison has no resolving power, and this is the
+most important line on the page.</strong> Two matrices ran on three real Terminal-Bench
+4.0 tasks: the first with an observational layer (1/6 against 2/6), the second adding a
+layer that puts the session's failed attempts back in the model's context (0/6 against
+0/6). The second cannot separate the arms at all — twelve trials, twelve failures — and
+the timeout counts say why: most attempts were cut off mid-work rather than finishing
+and failing. <strong>The agent budget, not the layers, is what this setup cannot see
+past.</strong> §3.</li>
 </ol>
 <p>Both arms passed <strong>0 of 6</strong> scored trials — identical pass rates. The two arms are identical except for one mounted plugin, so this is the RSI layer's measured effect on task outcomes — and it is <strong>not distinguishable from none</strong>. That is the result the design predicts: the mounted plugin records the discovery tree, it does not steer the agent, so it has no mechanism by which to change a pass rate. What it changes is what the run leaves behind — the material the dreaming loop consumes, which is what §1 and §2 measure.</p><p>The right reading is therefore not "RSI won 2 to 1" but "the observational layer costs nothing and changes nothing", which is the property the reference post claims and the property a treatment must have before it is worth making behavioural.</p>
 </section>
