@@ -49,9 +49,11 @@ TASKS_ROOT=/path/to/terminal-bench \\
   ./run-arm.sh DshRsi /tmp/trials /tmp/results /path/to/rsi-trace.tgz
 ```
 
-The treatment arm takes a plugin tarball so the exact build under test is pinned;
-`dsh-plugins/BUILD.md` is the recipe. `rsi_plugin` accepts either a tarball path or
-a published package name, comma-separated for several.
+The treatment arm takes a tarball so the exact build under test is pinned, rather
+than resolving whatever is on the registry today. The three layers are also
+published as `@unreal-harness/rsi-trace`, `-rsi-guided` and `-rsi-context`, so
+`rsi_plugin` accepts a published name just as well, comma-separated for several.
+`dsh-plugins/BUILD.md` is the build recipe.
 
 The runner refuses to start inside a DeepSeek peak-pricing window, because peak
 rates are exactly double off-peak and a batch that straddles the boundary would

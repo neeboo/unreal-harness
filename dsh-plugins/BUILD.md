@@ -1,14 +1,16 @@
 # Building the RSI plugin for a container run
 
-`rsi-trace` is a dsh plugin, and dsh loads plugins as normal npm packages. Both
-paths work:
+`rsi-trace` is a dsh plugin, and dsh loads plugins as normal npm packages. All
+three are published to the `@unreal-harness` scope, so the name works directly:
 
-* **by name**, once the packages are published to the `@unreal-harness` scope;
-* **by tarball**, built with `./build-plugins.sh` and handed to the agent adapter,
-  which uploads it and installs it into the profile.
+```sh
+dsh plugin --profile headless add @unreal-harness/rsi-trace@0.1.0
+dsh plugin --profile headless add @unreal-harness/rsi-guided@0.1.0
+dsh plugin --profile headless add @unreal-harness/rsi-context@0.1.0
+```
 
-The tarball path is what the benchmark uses, because it pins the exact build under
-test rather than whatever is currently on the registry:
+A benchmark pins the exact build under test, so it can hand the adapter a tarball
+built with `./build-plugins.sh` instead of resolving a version:
 
 ```sh
 uv run --project benchmarks/harbor --locked harbor trial start \
