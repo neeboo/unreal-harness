@@ -67,7 +67,7 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
   question, and an explicit list of what remains unproven. Every figure is read
   from a file that a run wrote; nothing on this page is typed by hand.</p>
   <div class="meta">
-    Generated 2026-09-23 02:46 UTC · revision <code>0a9e6b5</code> ·
+    Generated 2026-09-23 04:39 UTC · revision <code>1b1c8c1</code> ·
     model <code>deepseek-flash</code> (DeepSeek-V4.1-Flash) ·
     harness <code>@deepseek-ai/dsh@0.1.7-alpha.2</code>
   </div>
@@ -92,7 +92,7 @@ Node. The RSI arm passed 2/6 against the bare arm's 1/6 — a difference that is
 distinguishable from chance (<code>p&nbsp;=&nbsp;1.00</code>), on a layer that only
 observes the session. §3.</li>
 </ol>
-<p>Bare passed <strong>1/6</strong>, RSI passed <strong>2/6</strong>. The two arms are identical except for one mounted plugin, so this is the RSI layer's measured effect on task outcomes — and it is <strong>not distinguishable from none</strong>. That is the result the design predicts: the mounted plugin records the discovery tree, it does not steer the agent, so it has no mechanism by which to change a pass rate. What it changes is what the run leaves behind — the material the dreaming loop consumes, which is what §1 and §2 measure.</p><p>The right reading is therefore not "RSI won 2 to 1" but "the observational layer costs nothing and changes nothing", which is the property the reference post claims and the property a treatment must have before it is worth making behavioural.</p>
+<p>Both arms passed <strong>0 of 6</strong> scored trials — identical pass rates. The two arms are identical except for one mounted plugin, so this is the RSI layer's measured effect on task outcomes — and it is <strong>not distinguishable from none</strong>. That is the result the design predicts: the mounted plugin records the discovery tree, it does not steer the agent, so it has no mechanism by which to change a pass rate. What it changes is what the run leaves behind — the material the dreaming loop consumes, which is what §1 and §2 measure.</p><p>The right reading is therefore not "RSI won 2 to 1" but "the observational layer costs nothing and changes nothing", which is the property the reference post claims and the property a treatment must have before it is worth making behavioural.</p>
 </section>
 
 
@@ -217,8 +217,13 @@ mounted plugin.</p>
 
 <table class="data">
 <thead><tr><th>Arm</th><th>Scored</th><th>Passed</th><th>Pass rate</th><th>Mean billable input</th><th>Mean cache hit rate</th><th>Mean output</th><th>Mean cost</th><th>Mean wall clock</th><th>Timeouts</th><th>Scored anyway</th><th>Other errors</th></tr></thead>
-<tbody><tr><td class='label'>Bare dsh</td><td>6</td><td>1</td><td class='num'>16.7%</td><td class='num'>5,387,199</td><td class='num'>99.3%</td><td class='num'>111,466</td><td class='num'>$0.17518</td><td class='num'>867.6s</td><td class='num'>3</td><td class='num'>0</td><td class='num'>0</td></tr><tr><td class='label'>dsh + RSI trace</td><td>6</td><td>2</td><td class='num'>33.3%</td><td class='num'>2,422,738</td><td class='num'>99.1%</td><td class='num'>100,458</td><td class='num'>$0.14156</td><td class='num'>876.9s</td><td class='num'>4</td><td class='num'>2</td><td class='num'>0</td></tr></tbody>
+<tbody><tr><td class='label'>Bare dsh</td><td>6</td><td>0</td><td class='num'>0.0%</td><td class='num'>5,789,724</td><td class='num'>99.5%</td><td class='num'>111,461</td><td class='num'>$0.17668</td><td class='num'>862.6s</td><td class='num'>3</td><td class='num'>0</td><td class='num'>0</td></tr><tr><td class='label'>dsh + RSI trace</td><td>6</td><td>0</td><td class='num'>0.0%</td><td class='num'>3,477,465</td><td class='num'>98.9%</td><td class='num'>119,768</td><td class='num'>$0.08703</td><td class='num'>922.5s</td><td class='num'>4</td><td class='num'>0</td><td class='num'>0</td></tr></tbody>
 </table>
+
+<p class="note"><strong>Read the timeout column first.</strong> Most trials here were
+cut off by the agent budget rather than finishing and failing, and a trial that times
+out records no token usage at all — so it contributes a 0 with no cost beside it. When
+timeouts dominate, the pass rate measures the budget more than the agent.</p>
 
 <p class="note"><strong>Timeouts are reported in three separate columns on purpose.</strong>
 A timeout with no reward is a failed attempt. A timeout with a reward of 0.0 is the
@@ -231,13 +236,13 @@ them together was a real bug in the first version of this extractor.</p>
 cache hit costs $0.003/Mtok against $0.15/Mtok for a miss off-peak — a 50×
 spread. "Mean billable input" is therefore uncached + cached tokens, and the
 cache-hit rate is reported beside it. Pricing window for this batch:
-<strong>peak</strong>; peak hours bill at exactly double, so a
+<strong>off-peak, peak</strong>; peak hours bill at exactly double, so a
 matrix must not straddle the boundary.</p>
 
 <h3>Per task</h3>
 <table class="data">
 <thead><tr><th>Task</th><th>Bare</th><th>Bare rate</th><th>RSI</th><th>RSI rate</th><th>Bare cost</th><th>RSI cost</th></tr></thead>
-<tbody><tr><td class='label'>html-js-filter</td><td class='num'>1/2</td><td class='num'>50.0%</td><td class='num'>2/2</td><td class='num'>100.0%</td><td class='num'>$0.23626 (+1 unmeasured)</td><td class='num'>— (2 unmeasured)</td></tr><tr><td class='label'>session-window-debug</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>$0.28929</td><td class='num'>$0.28313</td></tr><tr><td class='label'>shadow-relay</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>— (2 unmeasured)</td><td class='num'>— (2 unmeasured)</td></tr></tbody>
+<tbody><tr><td class='label'>html-js-filter</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>$0.21098 (+1 unmeasured)</td><td class='num'>— (2 unmeasured)</td></tr><tr><td class='label'>session-window-debug</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>$0.31905</td><td class='num'>$0.17406</td></tr><tr><td class='label'>shadow-relay</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>0/2</td><td class='num'>0.0%</td><td class='num'>— (2 unmeasured)</td><td class='num'>— (2 unmeasured)</td></tr></tbody>
 </table>
 
 <h3>How the timeouts break down</h3>
@@ -246,7 +251,7 @@ out rather than folded into the pass rate.</p>
 <table class="data">
 <thead><tr><th>Arm</th><th>Timed out</th><th>…and still given a reward</th>
 <th>…with a reward above zero</th><th>No reward, no exception</th></tr></thead>
-<tbody><tr><td class='label'>Bare dsh</td><td class='num'>3</td><td class='num'>3</td><td class='num'>0</td><td class='num'>0</td></tr><tr><td class='label'>dsh + RSI trace</td><td class='num'>4</td><td class='num'>4</td><td class='num'>2</td><td class='num'>0</td></tr></tbody>
+<tbody><tr><td class='label'>Bare dsh</td><td class='num'>3</td><td class='num'>3</td><td class='num'>0</td><td class='num'>0</td></tr><tr><td class='label'>dsh + RSI trace</td><td class='num'>4</td><td class='num'>4</td><td class='num'>0</td><td class='num'>0</td></tr></tbody>
 </table>
 
 <h3>Is the difference real?</h3>
@@ -255,25 +260,25 @@ document to over-read, so it is tested rather than eyeballed.</p>
 <table class="data">
 <thead><tr><th>Arm</th><th>Passed</th><th>Rate</th><th>95% confidence interval</th></tr></thead>
 <tbody>
-<tr><td class='label'>Bare dsh</td><td class='num'>1/6</td>
-<td class='num'>16.7%</td>
-<td class='num'>3.0% – 56.4%</td></tr>
-<tr><td class='label'>dsh + RSI trace</td><td class='num'>2/6</td>
-<td class='num'>33.3%</td>
-<td class='num'>9.7% – 70.0%</td></tr>
+<tr><td class='label'>Bare dsh</td><td class='num'>0/6</td>
+<td class='num'>0.0%</td>
+<td class='num'>0.0% – 39.0%</td></tr>
+<tr><td class='label'>dsh + RSI trace</td><td class='num'>0/6</td>
+<td class='num'>0.0%</td>
+<td class='num'>0.0% – 39.0%</td></tr>
 </tbody>
 </table>
 <p>Two-sided Fisher exact test on the pass/fail totals: <code>p&nbsp;=&nbsp;1.00</code>.
-<strong>The difference is not distinguishable from chance.</strong> The confidence intervals overlap almost completely and a two-sided Fisher exact test on the pass/fail totals gives <code>p&nbsp;=&nbsp;1.00</code>. Reporting a winner from this would be reporting noise.</p>
-<p>The two arms reached the <strong>same</strong> outcome on 2 of the
-3 tasks, so only the remaining 1 carried any
+<strong>Neither arm passed anything, so this comparison has no resolving power.</strong> Twelve trials, twelve failures, and 3 of 3 tasks agreeing exactly. A test cannot separate two treatments when no trial in either succeeded: the null result speaks to the experimental setup, not to the layers. The timeout counts above are the evidence — most attempts were cut off mid-work rather than finishing and failing, so the agent budget is a better explanation of this outcome than anything the treatment did.</p>
+<p>The two arms reached the <strong>same</strong> outcome on 3 of the
+3 tasks, so only the remaining 0 carried any
 information about which arm is better. That is the most useful number on this page for
 judging how much of the matrix was actually a comparison.</p>
 
 <p class="note">"With a reward above zero" is the column that matters: it means the
 agent had already finished the task and was killed while tidying up, which is a
 solved task. The other two are failed attempts.</p>
-<h3>Run errors</h3><p>These trials produced no reward. They are listed rather than dropped, because a trial that failed to run is not a task the agent failed to solve.</p><ul class='errors'><li><code>html-js-filter__UFGRWHj</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__Rx9NJBx</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__rCie35z</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>html-js-filter__PPJFmHW</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>html-js-filter__fE6NUpQ</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__G6aomtf</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__G9XVcmB</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li></ul>
+<h3>Run errors</h3><p>These trials produced no reward. They are listed rather than dropped, because a trial that failed to run is not a task the agent failed to solve.</p><ul class='errors'><li><code>html-js-filter__5vPmiZZ</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__7qVTSWi</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__pjoeZwG</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>html-js-filter__5NCgRxe</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>html-js-filter__yJ4C85P</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__MULYQKL</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__WseCyMo</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li></ul>
 
 
 <h2 id="loop">4 · The Dream-RSI loop on a real model</h2>

@@ -218,16 +218,35 @@ def section_significance(harbor: dict[str, Any] | None) -> str:
         1 for counts in per_task.values() if counts.get("bare") == counts.get("rsi")
     )
 
-    verdict = (
-        "<strong>The difference is not distinguishable from chance.</strong> The "
-        "confidence intervals overlap almost completely and a two-sided Fisher exact "
-        "test on the pass/fail totals gives "
-        f"<code>p&nbsp;=&nbsp;{p_value:.2f}</code>. Reporting a winner from this would "
-        "be reporting noise."
-        if not significant
-        else "<strong>The difference is statistically significant at p&nbsp;&lt;&nbsp;0.05</strong>, "
-        "though on this many tasks the effect size is still estimated very loosely."
-    )
+    if bp == 0 and rp == 0:
+        # The all-zero case is the one most easily misread as "no difference", when
+        # what it actually shows is that the experiment could not detect anything:
+        # with no success anywhere there is no variance for a difference to appear
+        # in, whatever the treatment does.
+        verdict = (
+            "<strong>Neither arm passed anything, so this comparison has no resolving "
+            "power.</strong> Twelve trials, twelve failures, and "
+            f"{agreeing} of {len(per_task)} tasks agreeing exactly. A test cannot "
+            "separate two treatments when no trial in either succeeded: the null "
+            "result speaks to the experimental setup, not to the layers. The "
+            "timeout counts above are the evidence — most attempts were cut off "
+            "mid-work rather than finishing and failing, so the agent budget is a "
+            "better explanation of this outcome than anything the treatment did."
+        )
+    elif not significant:
+        verdict = (
+            "<strong>The difference is not distinguishable from chance.</strong> The "
+            "confidence intervals overlap almost completely and a two-sided Fisher exact "
+            "test on the pass/fail totals gives "
+            f"<code>p&nbsp;=&nbsp;{p_value:.2f}</code>. Reporting a winner from this would "
+            "be reporting noise."
+        )
+    else:
+        verdict = (
+            "<strong>The difference is statistically significant at "
+            "p&nbsp;&lt;&nbsp;0.05</strong>, though on this many tasks the effect size is "
+            "still estimated very loosely."
+        )
 
     return f"""
 <h3>Is the difference real?</h3>
@@ -429,6 +448,11 @@ mounted plugin.</p>
 <thead>{header}</thead>
 <tbody>{''.join(rows)}</tbody>
 </table>
+
+<p class="note"><strong>Read the timeout column first.</strong> Most trials here were
+cut off by the agent budget rather than finishing and failing, and a trial that times
+out records no token usage at all — so it contributes a 0 with no cost beside it. When
+timeouts dominate, the pass rate measures the budget more than the agent.</p>
 
 <p class="note"><strong>Timeouts are reported in three separate columns on purpose.</strong>
 A timeout with no reward is a failed attempt. A timeout with a reward of 0.0 is the

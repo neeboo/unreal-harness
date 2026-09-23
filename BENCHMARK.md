@@ -8,7 +8,7 @@ Two different questions are being asked, and they need two different benchmarks.
 |---|---|---|
 | Does the Dream-RSI loop run end to end on a real model? | A controlled A/B where the **only** difference between arms is the exploration policy, on a task with a real evaluator | **Measured.** `packages/bench`, results in [`bench-out/main-low2/report.html`](bench-out/main-low2/report.html). The loop, replay scoring, monotone selection and deployment all work; the pool had no signal, so the retained incumbent is a correct no-op rather than a win (§3, §4) |
 | Can replay actually tell two strategies apart, or is the pool degenerate by construction? | Replay over many recorded trees from an explicit generative model, with a pool spanning the depth-versus-breadth axis | **Measured.** Coverage spreads 94.2% → 70.8% across five policies, the choice fitted on 120 training worlds transfers to 120 unseen ones, and the same pool collapses to a flat 100% when the round budget is lifted — so the original degeneracy was a *budget* property (§6) |
-| Is RSI-Harness better than a plain harness on public coding benchmarks? | Harbor runs on Terminal-Bench 4.0, bare-`dsh` against `dsh` + the RSI plugin | **Measured, no significant difference.** 6 trials per arm over 3 tasks; RSI 2/6 against bare 1/6, Fisher exact `p = 1.00`. The layer only *observes*, so it has no mechanism to move a pass rate (§5.9) |
+| Is RSI-Harness better than a plain harness on public coding benchmarks? | Harbor runs on Terminal-Bench 4.0, bare-`dsh` against `dsh` + the RSI plugin | **Measured twice, no difference either time.** A second matrix adding the advisory layer returned 0/6 against 0/6 — no resolving power, because most trials timed out before finishing (§5.10). The layers are delivered; the budget, not the layers, is what this setup cannot see past |
 
 The rest of this document says exactly which standards apply, and why the third
 question cannot be answered by the first two.
@@ -175,7 +175,7 @@ are ordered because a higher level is uninterpretable if a lower one fails.
 | **L0 — mechanism** | The replay → evaluate → select → deploy loop runs and never regresses on recorded history | Two-arm equal-attempt A/B on a real task with an out-of-process evaluator | ✅ **Measured** (§4) |
 | **L1 — overhead** | Mounting the plugins does not make a session more expensive | Same tasks through bare `dsh` and `dsh + rsi-trace`, in containers, same model and budget | ✅ **Measured** (§5) |
 | **L2 — routing** | A policy chosen by replay beats a hand-written fixed strategy at equal compute | Replay over many recorded trees, with a pool that demonstrably discriminates | ✅ **Measured on synthetic worlds** (§4.0.1, §6); ❌ not on real trees |
-| **L3 — public** | `dsh` + plugins beats bare `dsh` on a public benchmark | Harbor A/B on Terminal-Bench 4.0 | ⚠️ **Run; no significant difference** — RSI 2/6 vs bare 1/6, `p = 1.00`, on a layer that only observes (§5.9) |
+| **L3 — public** | `dsh` + plugins beats bare `dsh` on a public benchmark | Harbor A/B on Terminal-Bench 4.0 | ❌ **Run twice; no difference either time** — 1/6 vs 2/6 then 0/6 vs 0/6. The second matrix has no resolving power because the agent budget cut most attempts off mid-work (§5.9, §5.10) |
 
 Three properties of this ladder matter more than the rows:
 
@@ -392,7 +392,7 @@ Its integration test asserts against the request the **model** received, not
 against the ledger. A correct fold that never reaches a prompt is an inert
 feature, and that was a real bug found in a container rather than a hypothetical.
 
-### 5.9 The measured result
+### 5.9 The first matrix (observer only)
 
 Six trials per arm on three Terminal-Bench 4.0 tasks, two attempts each, identical
 model, harness version, Node version, task text and image. The only difference is the
@@ -433,6 +433,48 @@ Two details worth keeping:
 Cost, over the trials that could be priced: bare $0.5255 across 6 trials,
 RSI $0.2831 across 6 — but these cover different task mixes once timeouts
 drop out, so they are not comparable and no cost conclusion is drawn.
+
+### 5.10 The second matrix (observer plus advisor)
+
+Two matrices have run. The first mounted only `rsi-trace`, an observer, and returned
+1/6 against 2/6 (`p = 1.00`). The second mounted the observer **and** `rsi-guided`, the
+advisory layer, and returned the following on the same three tasks with two attempts
+each, identical model, harness, Node, task text and image:
+
+| Task | Bare `dsh` | `dsh` + both layers |
+|---|---|---|
+| `html-js-filter` | 0/2 | 0/2 |
+| `session-window-debug` | 0/2 | 0/2 |
+| `shadow-relay` | 0/2 | 0/2 |
+
+| Arm | Passed | Rate | 95% CI | Timeouts | Timeouts with a positive reward |
+|---|---|---|---|---|---|
+| bare | 0/6 | 0.0% | 0.0% – 39.0% | 3 | 0 |
+| RSI | 0/6 | 0.0% | 0.0% – 39.0% | 4 | 0 |
+
+**Neither arm passed anything, so this comparison has no resolving power.** Twelve
+trials, twelve failures, and every task agreeing exactly. A test cannot separate two
+treatments when no trial in either succeeded; the null speaks to the setup, not to the
+layers.
+
+The evidence that the *setup* is the limit, not the layers, is in the timeout column:
+3 of 6 bare trials and 4 of 6 RSI trials were cut
+off mid-work rather than finishing and failing. An earlier run at the same budget did
+pass one `html-js-filter` attempt in 93 steps, so the tasks are reachable — the budget
+is simply too small for a reliable signal, and smaller than a pass rate needs to mean
+anything.
+
+### 5.11 What this does and does not establish about the layers
+
+- **Establishes:** the advisory layer is delivered. After a failing command, the
+  model's next request carries the attempt ledger, and a model asked to quote it
+  reproduced the text verbatim (`rsi-guided`'s integration test asserts this against
+  the request the model received, and it was confirmed in a live container).
+- **Does not establish:** that the advisory layer changes outcomes. At a budget where
+  most attempts never finish, no layer can be credited or blamed for a pass rate.
+- **Does not establish:** that the two matrices are comparable to each other. The
+  first returned 1/6 and 2/6, the second 0/6 and 0/6, on the same tasks and model —
+  run-to-run variance alone accounts for a swing that large at six trials per arm.
 
 ## 6. Does an invented policy beat a hand-written one? (the paper's actual claim)
 
@@ -517,9 +559,11 @@ Stated plainly, because a benchmark page that only lists wins is an advertisemen
   (§5.9) — 6 trials per arm over 3 tasks — and found no significant difference. Six
   trials per arm cannot rank against published figures, and no such comparison is
   drawn. No DeepSWE, SWE-Atlas or ALE-CLI run has been executed.
-- **No "better than dsh" claim.** The A/B ran (§5.9) and found no difference
-  distinguishable from chance, which is what a purely observational layer predicts. A
-  real delta needs the layer wired into the agent's decisions, which is not done (§8).
+- **No "better than dsh" claim.** Two A/B matrices ran (§5.9, §5.10) and neither found
+  a difference. The first is explained by the layer only observing; the second has no
+  resolving power at all, because most of its trials timed out before finishing. Making
+  the layers behavioural is done — `rsi-guided` is delivered and verified — but a
+  budget that cuts attempts off mid-work cannot show whether that matters.
 - **"Dream-RSI works" is bounded** to what §4 measured: the loop, the replay
   scoring, the monotone selection, and the deployment. The invention step is now
   exercised separately in §6, where a model-invented policy beat the hand-written pool
