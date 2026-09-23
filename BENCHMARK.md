@@ -8,7 +8,7 @@ Two different questions are being asked, and they need two different benchmarks.
 |---|---|---|
 | Does the Dream-RSI loop run end to end on a real model? | A controlled A/B where the **only** difference between arms is the exploration policy, on a task with a real evaluator | **Measured.** `packages/bench`, results in [`bench-out/main-low2/report.html`](bench-out/main-low2/report.html). The loop, replay scoring, monotone selection and deployment all work; the pool had no signal, so the retained incumbent is a correct no-op rather than a win (§3, §4) |
 | Can replay actually tell two strategies apart, or is the pool degenerate by construction? | Replay over many recorded trees from an explicit generative model, with a pool spanning the depth-versus-breadth axis | **Measured.** Coverage spreads 94.2% → 70.8% across five policies, the choice fitted on 120 training worlds transfers to 120 unseen ones, and the same pool collapses to a flat 100% when the round budget is lifted — so the original degeneracy was a *budget* property (§6) |
-| Is RSI-Harness better than a plain harness on public coding benchmarks? | Harbor runs on Terminal-Bench 4.0, bare-`dsh` against `dsh` + the RSI plugin | **Measured twice, no difference either time.** A second matrix adding the advisory layer returned 0/6 against 0/6 — no resolving power, because most trials timed out before finishing (§5.10). The layers are delivered; the budget, not the layers, is what this setup cannot see past |
+| Is RSI-Harness better than a plain harness on public coding benchmarks? | Harbor runs, bare-`dsh` against `dsh` + both RSI layers | **No difference found, and the reason is now known.** Two Terminal-Bench matrices were uninterpretable — the budget cut attempts off mid-work, and an oracle run scoring 1.0 proves that was the limit rather than the harness (§5.11.1). A bounded task at a completable budget gave 8/8 against 7/8, `p = 1.00` (§5.12): a ceiling, so it cannot separate them either. No published-benchmark number is claimed |
 
 The rest of this document says exactly which standards apply, and why the third
 question cannot be answered by the first two.
@@ -175,7 +175,7 @@ are ordered because a higher level is uninterpretable if a lower one fails.
 | **L0 — mechanism** | The replay → evaluate → select → deploy loop runs and never regresses on recorded history | Two-arm equal-attempt A/B on a real task with an out-of-process evaluator | ✅ **Measured** (§4) |
 | **L1 — overhead** | Mounting the plugins does not make a session more expensive | Same tasks through bare `dsh` and `dsh + rsi-trace`, in containers, same model and budget | ✅ **Measured** (§5) |
 | **L2 — routing** | A policy chosen by replay beats a hand-written fixed strategy at equal compute | Replay over many recorded trees, with a pool that demonstrably discriminates | ✅ **Measured on synthetic worlds** (§4.0.1, §6); ❌ not on real trees |
-| **L3 — public** | `dsh` + plugins beats bare `dsh` on a public benchmark | Harbor A/B on Terminal-Bench 4.0 | ❌ **Run twice; no difference either time** — 1/6 vs 2/6 then 0/6 vs 0/6. The second matrix has no resolving power because the agent budget cut most attempts off mid-work (§5.9, §5.10) |
+| **L3 — public** | `dsh` + plugins beats bare `dsh` on a public benchmark | Harbor A/B on Terminal-Bench 4.0, then a bounded task | ❌ **No difference found.** Terminal-Bench matrices were budget-limited (§5.9, §5.10); a bounded task both arms complete gave 8/8 vs 7/8, `p = 1.00` (§5.12) |
 
 Three properties of this ladder matter more than the rows:
 
@@ -464,17 +464,50 @@ pass one `html-js-filter` attempt in 93 steps, so the tasks are reachable — th
 is simply too small for a reliable signal, and smaller than a pass rate needs to mean
 anything.
 
-### 5.11 What this does and does not establish about the layers
+### 5.11 What the Terminal-Bench matrices do and do not establish
 
 - **Establishes:** the advisory layer is delivered. After a failing command, the
   model's next request carries the attempt ledger, and a model asked to quote it
-  reproduced the text verbatim (`rsi-guided`'s integration test asserts this against
-  the request the model received, and it was confirmed in a live container).
-- **Does not establish:** that the advisory layer changes outcomes. At a budget where
-  most attempts never finish, no layer can be credited or blamed for a pass rate.
+  reproduced the text verbatim.
+- **Does not establish:** that the advisory layer changes outcomes. At the budgets
+  used, most attempts never finished, so no layer can be credited or blamed.
 - **Does not establish:** that the two matrices are comparable to each other. The
   first returned 1/6 and 2/6, the second 0/6 and 0/6, on the same tasks and model —
   run-to-run variance alone accounts for a swing that large at six trials per arm.
+
+### 5.11.1 What the oracle proves about the harness
+
+Running `interleaved-vigenere` with its own reference solution scored **reward
+1.0**, passing 6 of 6 tests in 37 seconds. That matters more than it looks: it
+shows the task is passable, the verifier grades correctly, and the pipeline reports
+what it measures. The zeros above are an agent-budget result, not a harness defect.
+
+### 5.12 The comparable run: a bounded task both arms can finish
+
+Every earlier matrix failed for a reason it took three attempts to find: the tasks
+were too hard for the budget (most attempts timed out mid-work) or too easy to
+discriminate. So a bounded audit task was written specifically for this: count the
+`.py` files under `/app/src`, name the most common filename, and report the total
+line count — six or seven agent steps, verified by comparing three strings.
+
+Sixteen trials, eight per arm, identical model and budget, no timeouts in either arm:
+
+| Arm | Passed | Rate | 95% CI | Mean billable input |
+|---|---|---|---|---|
+| bare `dsh` | 8/8 | 100.0% | 67.6% – 100.0% | 55028 |
+| `dsh` + both layers | 7/8 | 87.5% | 52.9% – 97.8% | 51610 |
+
+**This is the first comparison in the document the budget did not spoil** — both
+arms solved almost every trial, so the pass rate reflects the agents rather than the
+harness. It is also a ceiling: a task both arms pass nearly every time cannot
+separate them, and a two-sided Fisher exact test on the pass/fail totals gives
+`p = 1.00`. The one RSI failure is a single trial, and one trial is not a signal.
+
+What it does establish is the thing no earlier run could: **the full pipeline works
+end to end at a completable budget.** Both arms build their images, install their
+plugins, solve the task, and are graded correctly, with prompt-cache hit rates near
+97% on both. The layers neither help nor hurt on a task this small, which is
+exactly what a bounded task can tell you and no more.
 
 ## 6. Does an invented policy beat a hand-written one? (the paper's actual claim)
 

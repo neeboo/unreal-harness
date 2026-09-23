@@ -111,6 +111,29 @@ def section_verdict(harbor: dict[str, Any] | None) -> str:
     # there was no success for a difference to show up in, whatever the treatment
     # did. Saying "identical" there would read as a finding when it is an absence
     # of one, and it was the single most misleading sentence this page produced.
+    # A ceiling result is the mirror image of an all-zero one: if both arms pass
+    # everything, the task is too easy to separate them, and the pass rate again
+    # measures the task rather than the treatment. Saying "identical pass rates"
+    # there would be the same mistake in the other direction.
+    ceiling = (
+        bare.get("scored", 0) > 0
+        and bare_passed == bare.get("scored")
+        and rsi_passed == rsi.get("scored")
+    )
+    if ceiling:
+        return (
+            f"<p><strong>Both arms passed every trial, so this task cannot separate "
+            f"them either.</strong> {bare_passed}/{bare.get('scored')} against "
+            f"{rsi_passed}/{rsi.get('scored')}, with no timeouts in either arm — so "
+            "unlike the Terminal-Bench matrices this is a comparison the budget did "
+            "not spoil. It simply has a ceiling: a task both arms solve every time "
+            "tells you the task is too easy, not that the layers are equivalent.</p>"
+            "<p>What it does establish, and what no earlier run could, is that "
+            "<strong>the full pipeline works end to end at a completable budget</strong>: "
+            "both arms build, mount their plugins, solve the task, and are graded "
+            "correctly. §1 and §2 hold the measurements that actually discriminate.</p>"
+        )
+
     if bare_passed == 0 and rsi_passed == 0:
         return (
             f"<p class='pending'><strong>Neither arm passed a single task, so no result "
@@ -272,9 +295,9 @@ time in their own <code>task.toml</code>, and the matrices gave them 864. At the
 observed per-step cost of 30-60 seconds that buys roughly fifteen steps, against the
 20-60 a real attempt needs. The zeros were the budget expiring — not the layers
 failing, and not the harness misreporting.</p>
-<p>One consequence is worth stating plainly: <strong>no result on this page
-establishes that either layer helps or hurts</strong>, because no configuration has
-yet given the agent enough time to finish an attempt.</p>
+<p>One consequence is worth stating plainly: on the Terminal-Bench tasks, no
+result established that either layer helps or hurts, because no configuration gave
+the agent enough time to finish an attempt.</p>
 
 <h3>Is the difference real?</h3>
 <p>A pass-rate difference on a handful of tasks is the easiest thing in this
@@ -292,10 +315,7 @@ document to over-read, so it is tested rather than eyeballed.</p>
 </table>
 <p>Two-sided Fisher exact test on the pass/fail totals: <code>p&nbsp;=&nbsp;{p_value:.2f}</code>.
 {verdict}</p>
-<p>The two arms reached the <strong>same</strong> outcome on {agreeing} of the
-{len(per_task)} tasks, so only the remaining {len(per_task) - agreeing} carried any
-information about which arm is better. That is the most useful number on this page for
-judging how much of the matrix was actually a comparison.</p>
+<p>With {len(per_task)} task(s) in the matrix, {agreeing} agree exactly between the arms{' ' if agreeing != len(per_task) else ', so the arms differ on none of them'}.</p>
 """
 
 
@@ -465,8 +485,7 @@ def section_harbor(harbor: dict[str, Any] | None) -> str:
 
     return f"""
 <h2 id="harbor">3 · Public-benchmark A/B</h2>
-<p>{len(tasks)} tasks from <strong>Terminal-Bench 4.0</strong> (the dataset the
-reference post reports on), {len(trials)} trials, identical model
+<p>{len(tasks)} task(s), {len(trials)} trials, identical model
 (<code>deepseek-flash</code>), identical Node and harness versions, identical
 task text, same image per task. The only difference between the arms is one
 mounted plugin.</p>
@@ -957,14 +976,14 @@ task. §1.</li>
 <li><strong>The replay mechanism discriminates, and the earlier degeneracy was a
 budget artifact.</strong> Coverage spreads across a five-policy pool on held-out
 worlds, and the same pool collapses to a flat 100% when the round limit is lifted. §2.</li>
-<li><strong>The public-benchmark comparison has no resolving power, and this is the
-most important line on the page.</strong> Two matrices ran on three real Terminal-Bench
-4.0 tasks: the first with an observational layer (1/6 against 2/6), the second adding a
-layer that puts the session's failed attempts back in the model's context (0/6 against
-0/6). The second cannot separate the arms at all — twelve trials, twelve failures — and
-the timeout counts say why: most attempts were cut off mid-work rather than finishing
-and failing. <strong>The agent budget, not the layers, is what this setup cannot see
-past.</strong> §3.</li>
+<li><strong>The containerised comparison works, but no run has yet separated the
+arms.</strong> Sixteen trials on a bounded audit task — both arms completing every
+trial, no timeouts — gave <strong>8/8 against 7/8</strong>, which is
+indistinguishable from chance. Two earlier Terminal-Bench 4.0 matrices were
+uninterpretable for the opposite reason: their agent budget cut most attempts off
+mid-work, so nothing passed and the pass rate measured the harness. The oracle on
+one of those tasks scored 1.0, which is what proves the harness itself is sound.
+§3.</li>
 </ol>
 {section_verdict(harbor)}
 </section>
