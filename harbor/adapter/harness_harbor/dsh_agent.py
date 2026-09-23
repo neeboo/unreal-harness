@@ -184,10 +184,9 @@ class Dsh(BaseInstalledAgent):
         """The plugin bundles to install, after the CLI override is applied.
 
         ``--agent-kwarg rsi_plugin=<spec>`` replaces the class default outright.
-        That matters because the RSI packages are not on the public registry:
-        the default names only resolve once they are published, so a run from a
-        checkout must be able to point at locally packed tarballs without editing
-        the class.
+        The default names are the published `@unreal-harness/*` packages; a run
+        that needs to pin an exact build points at locally packed tarballs
+        instead, without editing the class.
 
         Several specs may be given, comma-separated, because the treatment is more
         than one package and `--agent-kwarg` is a single key. An empty segment is
@@ -490,9 +489,9 @@ echo "installed RSI bundles: {quoted}"
     async def _stage_local_bundle(self, environment: BaseEnvironment, spec: str) -> str:
         """Upload a local ``.tgz`` so a container can ``npm install`` it.
 
-        The RSI plugin packages are not on the public registry, so a run must be
-        able to hand the harness a native artifact. Uploading the tarball keeps
-        the container offline-capable apart from npm itself.
+        A run pins the exact build under test by shipping the artifact rather
+        than resolving a version from the registry. Uploading the tarball also
+        keeps the container offline-capable apart from npm itself.
         """
         source = Path(spec.removeprefix("file:")).expanduser().resolve()
         if not source.is_file():
@@ -776,8 +775,8 @@ class DshRsi(Dsh):
     #: puts the recorded attempts back in the model's context. Mounting only the
     #: first is what produced a measured difference of none, correctly.
     RSI_BUNDLES: tuple[str, ...] = (
-        "@deepseek-ai/dsh-rsi-trace",
-        "@deepseek-ai/dsh-rsi-guided",
+        "@unreal-harness/rsi-trace",
+        "@unreal-harness/rsi-guided",
     )
 
     @staticmethod

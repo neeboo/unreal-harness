@@ -217,11 +217,11 @@ class BundleResolutionTests(unittest.TestCase):
     """``--agent-kwarg rsi_plugin=`` must actually take effect."""
 
     class _WithBundles(_AgentStub):
-        RSI_BUNDLES = ("@deepseek-ai/dsh-rsi-trace",)
+        RSI_BUNDLES = ("@unreal-harness/rsi-trace",)
 
     def test_class_default_is_used_without_an_override(self):
         agent = self._WithBundles(model_name="deepseek-flash")
-        self.assertEqual(agent.bundles(), ("@deepseek-ai/dsh-rsi-trace",))
+        self.assertEqual(agent.bundles(), ("@unreal-harness/rsi-trace",))
 
     def test_cli_override_replaces_the_class_default(self):
         agent = self._WithBundles(model_name="deepseek-flash")
@@ -250,8 +250,8 @@ class BundleResolutionTests(unittest.TestCase):
             "deepseek-ai-dsh-rsi-trace-0.1.0",
         )
         self.assertEqual(
-            _bundle_package_names(("@deepseek-ai/dsh-rsi-trace",)),
-            "@deepseek-ai/dsh-rsi-trace",
+            _bundle_package_names(("@unreal-harness/rsi-trace",)),
+            "@unreal-harness/rsi-trace",
         )
 
 
@@ -271,7 +271,7 @@ class ArmSeparationTests(unittest.TestCase):
         """
         self.assertEqual(
             DshRsi.RSI_BUNDLES,
-            ("@deepseek-ai/dsh-rsi-trace", "@deepseek-ai/dsh-rsi-guided"),
+            ("@unreal-harness/rsi-trace", "@unreal-harness/rsi-guided"),
         )
 
     def test_arms_share_the_same_profile_and_overlay(self):

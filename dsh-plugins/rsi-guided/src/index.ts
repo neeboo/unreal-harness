@@ -34,7 +34,7 @@
  * assertion in a prompt is worse than silence. Everything rendered here is a
  * literal record.
  *
- * @module @deepseek-ai/dsh-rsi-guided
+ * @module @unreal-harness/rsi-guided
  */
 
 import { Service } from '@deepseek-ai/cordis'

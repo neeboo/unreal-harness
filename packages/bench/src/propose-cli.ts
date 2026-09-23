@@ -2,7 +2,7 @@
  * CLI for the proposal experiment.
  *
  * ```sh
- * DEEPSEEK_API_KEY=... pnpm --filter @neeboo/unreal-harness-bench propose-experiment \
+ * DEEPSEEK_API_KEY=... pnpm --filter @unreal-harness/bench propose-experiment \
  *   --out harbor/tools/propose-summary.json --revisions 4
  * ```
  *

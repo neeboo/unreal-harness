@@ -1,5 +1,5 @@
 {
-  "name": "@neeboo/unreal-harness-workspace",
+  "name": "@unreal-harness/workspace",
   "description": "Per-node workspace snapshots: hard-linked forks with an explicit copy-on-write boundary",
   "version": "0.1.0",
   "type": "module",
@@ -43,5 +43,6 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "private": true
 }

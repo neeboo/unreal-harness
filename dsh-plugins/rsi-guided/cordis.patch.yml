@@ -5,4 +5,4 @@
 # session's own tool events, so the two bundles can be mounted independently.
 - insert:
     - id: rsi-guided
-      name: '@deepseek-ai/dsh-rsi-guided'
+      name: '@unreal-harness/rsi-guided'

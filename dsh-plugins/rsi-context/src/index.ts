@@ -3,7 +3,7 @@
  * work to whatever compaction engine is already mounted.
  *
  * This is the adapter between the pure decision layer
- * (`@neeboo/unreal-harness-judgment`) and a live session. It deliberately does
+ * (`@unreal-harness/judgment`) and a live session. It deliberately does
  * NOT register its own `CompactionEngine`: `ctx.compaction` is a single service,
  * so a second registration would collide with `compaction-basic`, and replacing
  * it would take over summarisation — a different and much larger job than
@@ -27,6 +27,7 @@ import type { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { CompactionAgentContext } from '@deepseek-ai/dsh-compaction'
 import {
   ChunkScorer,
+  HeuristicJudgmentProvider,
   planRebuild,
   summariseVerdicts,
   type ChunkVerdict,
@@ -34,7 +35,20 @@ import {
   type RebuildPlan,
   type ScoreableChunk,
   type TokenPrices,
-} from '@neeboo/unreal-harness-judgment'
+} from '@unreal-harness/judgment'
+
+/**
+ * Off-peak DeepSeek rates, per million tokens.
+ *
+ * The default so that a config-free mount prices reductions instead of crashing.
+ * `harbor/tools/pricing.py` holds the full peak/off-peak table; these are the
+ * off-peak figures, the cheaper and therefore more conservative pair for a
+ * decision about whether breaking the cache is worth it.
+ */
+export const DEFAULT_PRICES: TokenPrices = Object.freeze({
+  cacheMissPerMillion: 0.15,
+  cacheHitPerMillion: 0.003,
+})
 
 export const name = 'rsi-context'
 export const inject = ['sessionProjections', 'compaction']
@@ -77,13 +91,22 @@ export interface RsiContextConfig {
   /**
    * Where the judgments come from.
    *
-   * Supplied by the caller rather than constructed here, so a deployment chooses
-   * between the zero-cost structural provider and a model-backed one without
-   * touching this service — and so a test can pass a scripted provider.
+   * Defaults to the zero-cost structural provider, so mounting this plugin
+   * without a config works. An earlier revision required it, and the effect was
+   * that the plugin mounted, threw `Cannot read properties of undefined (reading
+   * 'provider')` during construction, and produced no context at all -- the same
+   * silent-inertness failure this layer exists to avoid. A deployment that wants
+   * model-backed judgment passes one explicitly; a test passes a scripted one.
    */
-  readonly provider: JudgmentProvider
-  /** Provider prices, used to decide whether a reduction is worth its cache break. */
-  readonly prices: TokenPrices
+  readonly provider?: JudgmentProvider
+  /**
+   * Provider prices, used to decide whether a reduction is worth its cache break.
+   *
+   * Defaults to the off-peak DeepSeek rate card, which is what the benchmark in
+   * this repository measures against. A deployment on a different rate card
+   * passes its own rather than inheriting a wrong one silently.
+   */
+  readonly prices?: TokenPrices
   /**
    * How many further requests this context is expected to serve.
    *
@@ -106,11 +129,13 @@ export interface RsiContextConfig {
  */
 export class RsiContext extends Service {
   private readonly scorer: ChunkScorer
+  private readonly config: RsiContextConfig
 
-  constructor(ctx: Context, private readonly config: RsiContextConfig) {
+  constructor(ctx: Context, config: RsiContextConfig = {}) {
     super(ctx, 'rsiContext')
+    this.config = config
     this.scorer = new ChunkScorer({
-      provider: config.provider,
+      provider: config.provider ?? new HeuristicJudgmentProvider(),
       ...config.confidenceFloor === undefined ? {} : { confidenceFloor: config.confidenceFloor },
     })
   }
@@ -158,7 +183,7 @@ export class RsiContext extends Service {
         cachedUpTo: this.config.cachedUpTo ?? 0,
         ...this.config.expectedReuses === undefined ? {} : { expectedReuses: this.config.expectedReuses },
       },
-      this.config.prices,
+      this.config.prices ?? DEFAULT_PRICES,
     )
 
     const bySeq = new Map(candidates.map(candidate => [String(candidate.seq), candidate.seq]))
@@ -225,7 +250,7 @@ export class RsiContext extends Service {
  * @param ctx - the mounting context.
  * @param config - the provider, prices, and policy knobs.
  */
-export function apply(ctx: Context, config: RsiContextConfig): void {
+export function apply(ctx: Context, config: RsiContextConfig = {}): void {
   ctx.plugin(RsiContext, config)
 }
 

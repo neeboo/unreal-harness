@@ -49,9 +49,9 @@ TASKS_ROOT=/path/to/terminal-bench \\
   ./run-arm.sh DshRsi /tmp/trials /tmp/results /path/to/rsi-trace.tgz
 ```
 
-The RSI plugin is not on the public npm registry, so the treatment arm needs a
-tarball. `dsh-plugins/BUILD.md` in this repository is the recipe; `rsi_plugin`
-accepts either that path or a published package name.
+The treatment arm takes a plugin tarball so the exact build under test is pinned;
+`dsh-plugins/BUILD.md` is the recipe. `rsi_plugin` accepts either a tarball path or
+a published package name, comma-separated for several.
 
 The runner refuses to start inside a DeepSeek peak-pricing window, because peak
 rates are exactly double off-peak and a batch that straddles the boundary would

@@ -123,15 +123,14 @@ first-time port gets wrong.
 Test totals: **120** standalone TypeScript, **18** Rust (16 unit + 2 doc), **21**
 inside the `dsh` checkout (`rsi-trace` 15, `rsi-context` 6).
 
-`dsh-plugins/rsi-context` additionally
-needs the local `@neeboo/*` packages resolved. Neither is published, so a test run
-there means copying `packages/*/lib` into `node_modules/@neeboo/` — see
-`PHASE0-VERIFICATION.md`.
+`dsh-plugins/rsi-context` additionally imports
+`@unreal-harness/judgment`. Build both with `dsh-plugins/build-plugins.sh`, which
+links the repo's own packages into its staging tree; see `dsh-plugins/BUILD.md`.
 
 ### Replaying a recorded run
 
 ```ts
-import { IMPLICIT_ROOT, replay, replayWorldFromTree } from '@neeboo/unreal-harness-rsi-trace'
+import { IMPLICIT_ROOT, replay, replayWorldFromTree } from '@unreal-harness/rsi-trace'
 
 const world = replayWorldFromTree(hostSessionId, ctx.rsiTrace.nodes(session))
 const result = replay(world, question => {
@@ -147,7 +146,7 @@ result.revealedNodeCount   // the trajectory's cost proxy
 ### Dreaming over a history
 
 ```ts
-import { ReplayWorld, dream } from '@neeboo/unreal-harness-policy'
+import { ReplayWorld, dream } from '@unreal-harness/policy'
 
 const outcome = await dream(worlds, incumbent, {
   revisions: 3,

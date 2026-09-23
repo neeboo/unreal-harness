@@ -1,8 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-rsi-guided",
+  "name": "@unreal-harness/rsi-guided",
   "description": "Trace-guided context: feed the recorded attempt ledger back into the agent's prompt",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
@@ -35,14 +34,17 @@
   "dependencies": {
     "zod": "^4.4.3"
   },
-  "devDependencies": {
-    "@deepseek-ai/cordis": ">=0.1.7-alpha.2",
-    "@deepseek-ai/dsh-agent": ">=0.1.7-alpha.2",
-    "@deepseek-ai/dsh-agent-loop": ">=0.1.7-alpha.2",
-    "@deepseek-ai/dsh-llm": ">=0.1.7-alpha.2",
-    "@deepseek-ai/dsh-session": ">=0.1.7-alpha.2",
-    "@deepseek-ai/dsh-session-projection": ">=0.1.7-alpha.2",
-    "@deepseek-ai/dsh-system-prompt": ">=0.1.7-alpha.2",
-    "@deepseek-ai/dsh-tools": ">=0.1.7-alpha.2"
-  }
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neeboo/unreal-harness.git",
+    "directory": "dsh-plugins/rsi-guided"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "rsi"
+  ]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@neeboo/unreal-harness-policy",
+  "name": "@unreal-harness/policy",
   "description": "The dreaming loop: improve how an agent explores, offline, from what it already recorded",
   "version": "0.1.0",
   "type": "module",
@@ -43,5 +43,6 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "private": true
 }

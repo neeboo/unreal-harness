@@ -1,5 +1,5 @@
 /**
- * # @neeboo/unreal-harness-workspace
+ * # @unreal-harness/workspace
  *
  * Give each discovery node a filesystem state of its own, so an attempt is
  * *resumable* rather than merely *describable*.

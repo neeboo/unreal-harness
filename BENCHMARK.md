@@ -214,7 +214,7 @@ mounted*. The delta is the result.
 | Arm | Composition | Why |
 |---|---|---|
 | `dsh-bare` | `dsh` with a stock profile | The baseline |
-| `dsh-rsi` | the same profile plus `@neeboo/unreal-harness-rsi-trace` and `-rsi-context` | The treatment |
+| `dsh-rsi` | the same profile plus `@unreal-harness/rsi-trace` and `-rsi-context` | The treatment |
 | `reference` | the published number for Codex / Pi | The context the reference post provides |
 
 ### 5.2 The metrics, taken from the reference post so the tables are comparable
@@ -235,7 +235,7 @@ drive the harness under test. As of this revision:
 | Docker daemon | **running** — verified `docker version` reports a live server |
 | Provider key | **present** — `DEEPSEEK_API_KEY`, official `deepseek-flash` |
 | Harness adapter | **written** — `harbor/src/harness_harbor/dsh_agent.py` |
-| RSI plugin, installable | **packed as a tarball** — the packages are not on the npm registry |
+| RSI plugin, installable | **packed as a tarball** so the build under test is pinned; the packages also build in-tree for publishing under `@unreal-harness` |
 | Bare harness, end-to-end | **passing** — verified in a container against a real task |
 | RSI arm, end-to-end | **runs**; the plugin mounts and the harness boots with it |
 | Public dataset, scored | **not run** — no dataset has been downloaded and scored |

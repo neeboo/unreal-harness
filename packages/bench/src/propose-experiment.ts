@@ -37,16 +37,16 @@ import {
   PROPOSAL_SYSTEM_PROMPT,
   statFor,
   syntheticCorpus,
-} from '@neeboo/unreal-harness-policy'
+} from '@unreal-harness/policy'
 import type {
   ExplorationPolicy,
   PolicyEvaluation,
   PolicyStat,
   ProposedPolicy,
-} from '@neeboo/unreal-harness-policy'
+} from '@unreal-harness/policy'
 
 import { DeepSeekClient } from './deepseek.ts'
-import { POOL as HAND_POOL } from '@neeboo/unreal-harness-policy'
+import { POOL as HAND_POOL } from '@unreal-harness/policy'
 
 const BETA = { cost: 0.05, parallelism: 0.1 } as const
 const BINDING = { maxParallelism: 4, roundLimit: 8 } as const

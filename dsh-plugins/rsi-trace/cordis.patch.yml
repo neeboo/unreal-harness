@@ -8,4 +8,4 @@
 
 - insert:
     - id: rsi-trace
-      name: '@deepseek-ai/dsh-rsi-trace'
+      name: '@unreal-harness/rsi-trace'

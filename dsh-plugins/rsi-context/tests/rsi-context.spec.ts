@@ -16,7 +16,7 @@ import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import RsiContext, { type SurfaceCandidate } from '../src/index.ts'
-import type { JudgmentProvider } from '@neeboo/unreal-harness-judgment'
+import type { JudgmentProvider } from '@unreal-harness/judgment'
 
 /** A provider that answers from a script, so the policy is tested alone. */
 function scripted(answers: Record<string, { choice: string; confidence: number }>): JudgmentProvider {

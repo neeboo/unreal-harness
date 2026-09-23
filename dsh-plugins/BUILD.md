@@ -1,9 +1,14 @@
 # Building the RSI plugin for a container run
 
-`rsi-trace` is a dsh plugin, and dsh loads plugins as normal npm packages. The
-package is **not on the public npm registry**, so a benchmark container cannot
-`pnpm add` it by name. The supported path is to pack it locally and hand the
-tarball to the agent adapter, which uploads it and installs it into the profile:
+`rsi-trace` is a dsh plugin, and dsh loads plugins as normal npm packages. Both
+paths work:
+
+* **by name**, once the packages are published to the `@unreal-harness` scope;
+* **by tarball**, built with `./build-plugins.sh` and handed to the agent adapter,
+  which uploads it and installs it into the profile.
+
+The tarball path is what the benchmark uses, because it pins the exact build under
+test rather than whatever is currently on the registry:
 
 ```sh
 uv run --project benchmarks/harbor --locked harbor trial start \
@@ -119,3 +124,67 @@ grep -oE 'from "[^"]+"' package/lib/index.js | sort -u
 
 If `@deepseek-ai/*` appears bundled rather than external, the plugin will load
 against a *copy* of cordis and its services will never connect to the host's.
+
+## Publishing
+
+The `@unreal-harness` scope is claimed, and all three plugins build ready to
+publish. Publishing needs an npm auth that can bypass the account's publish
+policy — a **legacy token cannot**, and the failure is a 403 that names the
+requirement:
+
+```
+403 Forbidden - PUT .../@unreal-harness%2frsi-trace -
+Two-factor authentication or granular access token with bypass 2fa enabled
+is required to publish packages.
+```
+
+Fix it once, then publish:
+
+```sh
+# 1. Create a GRANULAR access token: npmjs.com > Access Tokens > Generate New Token
+#    > Granular Access Token. Enable "Bypass 2FA". Give it read+write on the
+#    @unreal-harness scope. A legacy token will NOT work.
+# 2. Point npm at it.
+npm config set //registry.npmjs.org/:_authToken=<token>
+npm whoami                       # must print your username
+
+# 3. Build from source, then publish all three.
+cd dsh-plugins && ./build-plugins.sh
+for p in rsi-trace rsi-guided rsi-context; do
+  ( cd "$p" && npm publish --access public )
+done
+```
+
+Verify afterwards:
+
+```sh
+npm view @unreal-harness/rsi-guided version
+```
+
+### What each published package needs, and why
+
+| Package | peerDependencies | bundled |
+|---|---|---|
+| `rsi-trace` | `@deepseek-ai/cordis`, `-dsh-session`, `-dsh-session-projection` | `zod` |
+| `rsi-guided` | the above plus `-dsh-system-prompt` | `zod` |
+| `rsi-context` | `@deepseek-ai/cordis`, `-dsh-session`, `-dsh-compaction` | `@unreal-harness/judgment` |
+
+Two decisions in that table are deliberate and were both forced by measurement:
+
+- **The host packages stay peers.** A dsh plugin must share the host's cordis
+  instance. An earlier build of `rsi-context` inlined cordis and cosmokit — 71 kB,
+  with a duplicate `class Service` — because a sibling `@unreal-harness` import
+  made the bundler follow the graph into the framework. The build now pins
+  `external` explicitly rather than relying on inference.
+- **`@unreal-harness/judgment` is bundled, not a peer.** Declaring it as a peer
+  would make `rsi-context` uninstallable while `judgment` is unpublished, and a
+  `workspace:*` specifier cannot survive `npm publish` anyway. It is pure
+  functions with no host dependency, so inlining it shares no runtime state.
+
+### A config-free mount must work
+
+`rsi-context` previously required `config.provider`, so mounting it with no config
+threw `Cannot read properties of undefined (reading 'provider')` during
+construction and contributed nothing — mounted, loaded, and inert, which is the
+failure mode this whole directory keeps rediscovering. Its provider now defaults to
+the zero-cost heuristic one and its prices to the off-peak rate card.

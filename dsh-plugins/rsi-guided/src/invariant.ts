@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-rsi-guided`.
- * @module @deepseek-ai/dsh-rsi-guided/invariant
+ * Package-owned invariant companion for `@unreal-harness/rsi-guided`.
+ * @module @unreal-harness/rsi-guided/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-rsi-guided'
+const PACKAGE_NAME = '@unreal-harness/rsi-guided'
 
 /** Cordis companion plugin name. */
 export const name = 'rsi-guided-invariant'

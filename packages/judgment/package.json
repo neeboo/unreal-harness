@@ -1,5 +1,5 @@
 {
-  "name": "@neeboo/unreal-harness-judgment",
+  "name": "@unreal-harness/judgment",
   "description": "Typed, cheap judgments for an agent harness: a zero-cost structural provider and a TypeSafe Jev adapter",
   "version": "0.1.0",
   "type": "module",
@@ -41,5 +41,6 @@
     "@types/node": "^24.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
-  }
+  },
+  "private": true
 }

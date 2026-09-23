@@ -20,7 +20,7 @@ importers:
 
   packages/bench:
     dependencies:
-      '@neeboo/unreal-harness-policy':
+      '@unreal-harness/policy':
         specifier: workspace:*
         version: link:../policy
     devDependencies:

@@ -1,5 +1,5 @@
 /**
- * # @neeboo/unreal-harness-policy
+ * # @unreal-harness/policy
  *
  * The dreaming loop: improve how an agent explores, offline, from what it
  * already recorded.
@@ -34,7 +34,7 @@
  *
  * @example
  * ```ts
- * import { ReplayWorld, dream, PolicyStore } from '@neeboo/unreal-harness-policy'
+ * import { ReplayWorld, dream, PolicyStore } from '@unreal-harness/policy'
  *
  * const worlds = [new ReplayWorld(recordedNodes)]
  * const outcome = await dream(worlds, incumbent, {

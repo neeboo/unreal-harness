@@ -21,7 +21,7 @@
  * fact in a prompt is worse than no guidance. The ledger records literal
  * attempts, and {@link renderLedger} renders them literally.
  *
- * @module @deepseek-ai/dsh-rsi-guided/types
+ * @module @unreal-harness/rsi-guided/types
  */
 
 import type { SessionEvent, SessionLogOffset } from '@deepseek-ai/dsh-session'

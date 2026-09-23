@@ -6,7 +6,7 @@
  * package contributes the definition, not a storage mechanism — the same split
  * `rsi-trace` uses, for the same reason.
  *
- * @module @deepseek-ai/dsh-rsi-guided/projection
+ * @module @unreal-harness/rsi-guided/projection
  */
 
 import { z } from 'zod'

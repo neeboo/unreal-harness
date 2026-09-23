@@ -1,0 +1,8 @@
+# The dsh-rsi-context bundle patch.
+#
+# One insert over the profile root. A profile that stacks this bundle gets the
+# advisory context policy, which scores the session surface and hands spans to
+# the mounted compaction engine.
+- insert:
+    - id: rsi-context
+      name: '@unreal-harness/rsi-context'

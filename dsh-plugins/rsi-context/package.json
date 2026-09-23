@@ -1,8 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-rsi-context",
+  "name": "@unreal-harness/rsi-context",
   "description": "Advisory context policy: score the session surface, price the reductions, hand spans to the mounted compaction engine",
-  "version": "0.1.7-alpha.2",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
@@ -16,20 +15,32 @@
   },
   "files": [
     "lib/index.js",
+    "cordis.patch.yml",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
-  "devDependencies": {
-    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-agent-loop": "workspace:*",
-    "@deepseek-ai/dsh-compaction": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
-  }
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=0.1.7-alpha.2",
+    "@deepseek-ai/dsh-session": ">=0.1.7-alpha.2",
+    "@deepseek-ai/dsh-compaction": ">=0.1.7-alpha.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neeboo/unreal-harness.git",
+    "directory": "dsh-plugins/rsi-context"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "rsi"
+  ]
 }

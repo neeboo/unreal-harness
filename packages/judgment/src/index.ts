@@ -1,5 +1,5 @@
 /**
- * # @neeboo/unreal-harness-judgment
+ * # @unreal-harness/judgment
  *
  * Typed, cheap judgments that code branches on: *how much of this output does
  * the task need*, *which route should this subtask take*, *does this content
@@ -30,7 +30,7 @@
  *
  * @example
  * ```ts
- * import { HeuristicJudgmentProvider, mayAct, TIER_CRITERIA } from '@neeboo/unreal-harness-judgment'
+ * import { HeuristicJudgmentProvider, mayAct, TIER_CRITERIA } from '@unreal-harness/judgment'
  *
  * const provider = new HeuristicJudgmentProvider()
  * const answers = await provider.judge({

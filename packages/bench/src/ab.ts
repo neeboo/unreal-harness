@@ -43,7 +43,7 @@ import {
   type PrefixObservation,
   type PrefixQuestion,
   type RecordedNode,
-} from '@neeboo/unreal-harness-policy'
+} from '@unreal-harness/policy'
 import type { DeepSeekClient } from './deepseek.ts'
 import { evaluateCandidate, type EvaluationResult } from './evaluator.ts'
 import {

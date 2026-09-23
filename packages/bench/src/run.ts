@@ -25,7 +25,7 @@
 
 import { writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { ReplayWorld, type ExplorationPolicy, type PrefixQuestion } from '@neeboo/unreal-harness-policy'
+import { ReplayWorld, type ExplorationPolicy, type PrefixQuestion } from '@unreal-harness/policy'
 import { DeepSeekClient, type Effort } from './deepseek.ts'
 import { runArm, selectByDreaming, type ArmResult } from './ab.ts'
 import { HELD_OUT_INSTANCES, referenceOutputs } from './task-optimize.ts'

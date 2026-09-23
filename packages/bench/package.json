@@ -1,5 +1,5 @@
 {
-  "name": "@neeboo/unreal-harness-bench",
+  "name": "@unreal-harness/bench",
   "description": "The benchmark: DeepSeek-driven A/B between fixed exploration and Dream-RSI, with a real code-optimization task and an out-of-process evaluator",
   "version": "0.1.0",
   "type": "module",
@@ -43,9 +43,10 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "@neeboo/unreal-harness-policy": "workspace:*"
+    "@unreal-harness/policy": "workspace:*"
   },
   "bin": {
     "unreal-harness-bench": "lib/cli.js"
-  }
+  },
+  "private": true
 }

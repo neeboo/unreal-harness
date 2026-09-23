@@ -36,6 +36,6 @@ pnpm exec vitest run packages/rsi/rsi-trace packages/rsi/rsi-context
 `PHASE0-VERIFICATION.md` documents the exact wiring, including the four
 declaration-merge and project-reference details a first-time port gets wrong.
 
-`rsi-context` additionally imports `@neeboo/unreal-harness-judgment`, which is not
+`rsi-context` additionally imports `@unreal-harness/judgment`, which is not
 published, so a test run there also needs `packages/judgment/lib` copied to
-`node_modules/@neeboo/unreal-harness-judgment/`.
+`node_modules/@unreal-harness/judgment/`.
