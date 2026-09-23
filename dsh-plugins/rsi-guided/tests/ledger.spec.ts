@@ -13,7 +13,11 @@ import { expect, it } from 'vitest'
 import type { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import {
+  EXIT_CODE_MARKER,
+  SIGNAL_MARKER,
   attemptIdentity,
+  callIdOf,
+  classifyResult,
   excerptFromMessage,
   foldAttemptLedger,
   initAttemptLedger,
@@ -31,8 +35,22 @@ function call(seq: number, callId: string, name: string, args: object): SessionE
   } as unknown as SessionEvent
 }
 
-/** A `tool/result` event, failed or not. */
-function result(seq: number, callId: string, failed: boolean, text = 'boom'): SessionEvent {
+/**
+ * A `tool/result` event shaped the way dsh actually produces one.
+ *
+ * `infrastructure: true` sets the `error` field, which is what a spawn failure
+ * looks like. An *ordinary* command failure carries no error field at all --
+ * it carries `[exit code: N]` at the end of the rendered text, which is the
+ * only signal there is.
+ */
+function result(
+  seq: number,
+  callId: string,
+  failed: boolean,
+  text = 'boom',
+  options: { readonly infrastructure?: boolean; readonly marker?: string } = {},
+): SessionEvent {
+  const marker = options.marker ?? (failed ? '\n[exit code: 1]' : '')
   return {
     type: 'tool/result',
     seq,
@@ -40,11 +58,17 @@ function result(seq: number, callId: string, failed: boolean, text = 'boom'): Se
     data: {
       turn: 1,
       step: 1,
-      source: { kind: 'tool', callId },
-      ...(failed ? { error: { name: 'ToolError', code: 'FAILED' } } : {}),
+      ...(options.infrastructure === true ? { error: { name: 'ToolError', code: 'FAILED' } } : {}),
       message: {
         role: 'user',
-        content: [{ type: 'tool-result', toolCallId: callId, content: [{ type: 'text', text }] }],
+        // PRODUCTION SHAPE: the call id rides the message's source. The event
+        // itself carries only turn/step/message, which is what a live session
+        // showed after the first version of this fixture put `source` on the
+        // event and the tests passed against a shape nothing produces.
+        source: { kind: 'tool', callId },
+        content: [
+          { type: 'tool-result', toolCallId: callId, content: [{ type: 'text', text: `${text}${marker}` }] },
+        ],
       },
     },
   } as unknown as SessionEvent
@@ -207,4 +231,98 @@ it('digests stably and differently for different content', () => {
   expect(shortDigest('abc')).toBe(shortDigest('abc'))
   expect(shortDigest('abc')).not.toBe(shortDigest('abd'))
   expect(shortDigest('abc')).toHaveLength(8)
+})
+
+it('classifies a non-zero exit as a failure, which is the only signal there is', () => {
+  // THE BUG THIS PINS: dsh reports a non-zero exit in the rendered text rather
+  // than as an error, so a classifier keyed off `isError` records nothing and the
+  // guidance never fires. The first A/B treatment mounted a layer that was inert
+  // for exactly this reason.
+  const { outcome, failureText } = classifyResult(
+    { turn: 1, step: 1, source: { kind: 'tool', callId: 'c1' } },
+    'cat: /missing: No such file or directory\n[exit code: 1]',
+  )
+  expect(outcome).toBe('failed')
+  expect(failureText).toContain('No such file')
+  // The marker itself is stripped: the rendered line already says it failed, and
+  // it would otherwise be the visible end of every excerpt.
+  expect(failureText).not.toContain('[exit code')
+})
+
+it('treats exit code 0 as a success even when the output looks alarming', () => {
+  const { outcome } = classifyResult(
+    { turn: 1, step: 1, source: { kind: 'tool', callId: 'c1' } },
+    'grep: nothing matched\n[exit code: 0]',
+  )
+  expect(outcome).toBe('succeeded')
+})
+
+it('classifies a killed-by-signal run as a failure', () => {
+  const { outcome } = classifyResult(
+    { turn: 1, step: 1, source: { kind: 'tool', callId: 'c1' } },
+    'partial output\n[killed by signal: SIGKILL]',
+  )
+  expect(outcome).toBe('failed')
+})
+
+it('classifies a timeout and a sandbox denial as failures', () => {
+  const base = { turn: 1, step: 1, source: { kind: 'tool', callId: 'c1' } }
+  expect(classifyResult(base, 'still running\n[timed out after 60000ms]').outcome).toBe('failed')
+  expect(classifyResult(base, '[sandbox: denied]').outcome).toBe('failed')
+})
+
+it('classifies an infrastructure error as a failure regardless of text', () => {
+  const { outcome } = classifyResult(
+    { turn: 1, step: 1, source: { kind: 'tool', callId: 'c1' }, error: { name: 'X', code: 'Y' } },
+    'plain output',
+  )
+  expect(outcome).toBe('failed')
+})
+
+it('does not treat a command that merely mentions a failure as failed', () => {
+  const { outcome } = classifyResult(
+    { turn: 1, step: 1, source: { kind: 'tool', callId: 'c1' } },
+    'the test asserts that the error path returns 1\n[exit code: 0]',
+  )
+  expect(outcome).toBe('succeeded')
+})
+
+it('anchors the exit marker at the end, not anywhere in the output', () => {
+  // A build log containing the literal text must not be read as a failure.
+  expect(EXIT_CODE_MARKER.test('see the note [exit code: 1] above\nmore output')).toBe(false)
+  expect(EXIT_CODE_MARKER.test('done\n[exit code: 1]')).toBe(true)
+  expect(SIGNAL_MARKER.test('done\n[killed by signal: SIGTERM]')).toBe(true)
+})
+
+it('records a bash failure by exit code through the whole fold', () => {
+  let state = empty()
+  state = foldAttemptLedger(state, call(1, 'c1', 'bash', { command: 'pytest -q' }))
+  state = foldAttemptLedger(state, result(2, 'c1', true, '1 failed, 4 passed'))
+  const attempt = state.attempts[state.order[0]!]!
+  expect(attempt.outcome).toBe('failed')
+  expect(attempt.error).toContain('1 failed, 4 passed')
+})
+
+it('finds the call id where production actually puts it', () => {
+  // The event is { turn, step, message }; the id is on the message's source.
+  // Reading it off the event silently dropped every result and left the ledger
+  // permanently pending -- visible only as an empty prompt contribution.
+  expect(
+    callIdOf({ turn: 1, step: 1, message: { source: { kind: 'tool', callId: 'c9' }, content: [] } }),
+  ).toBe('c9')
+  expect(callIdOf({ turn: 1, step: 1, callId: 'c8' })).toBe('c8')
+  expect(callIdOf({ turn: 1, step: 1, message: { content: [{ toolCallId: 'c7' }] } })).toBe('c7')
+  expect(callIdOf({ turn: 1, step: 1, message: { content: [] } })).toBeUndefined()
+})
+
+it('resolves a result whose id is on the message source, end to end', () => {
+  let state = empty()
+  state = foldAttemptLedger(state, call(1, 'c1', 'bash', { command: 'pytest -q' }))
+  expect(Object.keys(state.pending)).toEqual(['c1'])
+  state = foldAttemptLedger(state, result(2, 'c1', true, '1 failed'))
+  // The pending entry must clear: a result that matches nothing is discarded,
+  // so a mismatch here means the ledger never records a completed attempt.
+  expect(Object.keys(state.pending)).toEqual([])
+  expect(state.order).toHaveLength(1)
+  expect(state.attempts[state.order[0]!]!.outcome).toBe('failed')
 })

@@ -29,6 +29,23 @@ import type { SessionEvent, SessionLogOffset } from '@deepseek-ai/dsh-session'
 /** How one attempt ended. */
 export type AttemptOutcome = 'succeeded' | 'failed' | 'unknown'
 
+/**
+ * The exit marker `dsh-tool-bash` appends to a non-zero foreground run.
+ *
+ * This is the *only* signal for an ordinary command failure, and finding that out
+ * cost a full benchmark run. dsh deliberately does not mark a non-zero exit as an
+ * error: its renderer reports the status and leaves the model to react, so only
+ * infrastructure failures (spawn errors, aborts) surface as `isError`. A ledger
+ * that keyed off `isError` therefore recorded *nothing* for the failures it exists
+ * to catch -- `pytest` returning 1, a missing module, a compile error -- and
+ * shipped a guidance feature with nothing to say. The first A/B treatment arm
+ * mounted it and measured an inert layer.
+ *
+ * Anchored at the end of the rendered output, mirroring the producer's own parse.
+ */
+export const EXIT_CODE_MARKER = /\n?\[exit code: (\d+)\]\s*$/
+export const SIGNAL_MARKER = /\n?\[killed by signal: ([^\]\n]+)\]\s*$/
+
 /** One attempt the session made, keyed by the tool call that made it. */
 export interface AttemptRecord {
   /** The tool that ran, e.g. `bash` or `write`. */
@@ -174,6 +191,55 @@ function collectText(value: unknown, into: string[], depth: number): void {
   if (Array.isArray(record['content'])) collectText(record['content'], into, depth + 1)
 }
 
+
+/**
+ * Classify one tool result as a worked or failed attempt.
+ *
+ * @param data - the `tool/result` event data.
+ * @param text - the concatenated text of the result message, if any.
+ * @returns the outcome, plus the failure text when there is one.
+ */
+export function classifyResult(
+  data: unknown,
+  text: string | undefined,
+): { outcome: AttemptOutcome; failureText?: string } {
+  const record =
+    typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {}
+
+  // An explicit error field is an infrastructure failure: spawn error, abort.
+  if (record['error'] !== undefined) return { outcome: 'failed', ...withText(text) }
+
+  const message = record['message']
+  const blocks =
+    typeof message === 'object' && message !== null
+      ? (message as { content?: { isError?: boolean }[] }).content
+      : undefined
+  if (Array.isArray(blocks) && blocks.some(block => block?.isError === true)) {
+    return { outcome: 'failed', ...withText(text) }
+  }
+
+  const rendered = text ?? ''
+  const exit = EXIT_CODE_MARKER.exec(rendered)
+  if (exit !== null && exit[1] !== undefined && Number(exit[1]) !== 0) {
+    // The marker is stripped from the excerpt: it says "this failed", which the
+    // rendered line already says, and it would otherwise be the visible end of
+    // every excerpt.
+    return { outcome: 'failed', ...withText(rendered.replace(EXIT_CODE_MARKER, '')) }
+  }
+  if (SIGNAL_MARKER.test(rendered)) {
+    return { outcome: 'failed', ...withText(rendered.replace(SIGNAL_MARKER, '')) }
+  }
+  // A timeout or a sandbox denial is also the attempt not working.
+  if (/\[timed out after \d+ms\]/.test(rendered) || rendered.includes('[sandbox: ')) {
+    return { outcome: 'failed', ...withText(rendered) }
+  }
+  return { outcome: 'succeeded' }
+}
+
+function withText(text: string | undefined): { failureText?: string } {
+  return text === undefined ? {} : { failureText: text }
+}
+
 /**
  * Fold one committed event into the ledger.
  *
@@ -220,19 +286,15 @@ export function foldAttemptLedger(
     }
     const { key, subject } = attemptIdentity(call.tool, call.detail)
     const message = (event.data as { message?: unknown }).message
-    const failed = (event.data as { error?: unknown }).error !== undefined
-      || (typeof message === 'object'
-        && message !== null
-        && (message as { content?: { isError?: boolean }[] }).content?.some?.(
-          block => block?.isError === true,
-        ) === true)
+    const text = excerptFromMessage(message)
+    const { outcome, failureText } = classifyResult(event.data, text)
 
     const record: AttemptRecord = {
       tool: call.tool,
       subject,
       detail: call.detail,
-      outcome: failed ? 'failed' : 'succeeded',
-      ...(failed ? withError(excerptFromMessage(message)) : {}),
+      outcome,
+      ...(failureText === undefined ? {} : { error: failureText }),
       step: call.step,
       turn: call.turn,
       seq: call.seq,
@@ -252,15 +314,35 @@ export function foldAttemptLedger(
   return state
 }
 
-function withError(error: string | undefined): { error?: string } {
-  return error === undefined ? {} : { error }
-}
-
-function callIdOf(data: unknown): string | undefined {
+/**
+ * The call a `tool/result` event answers.
+ *
+ * Tried in the order the payload is actually shaped, which was established by
+ * inspecting a live session rather than by reading the type: the event carries
+ * `{ turn, step, message }`, and the call id lives on the *message's* `source`,
+ * not on the event. An earlier version looked on the event and fell back to the
+ * message's first content block, matched nothing, dropped every result, and left
+ * the ledger permanently showing one pending call. The failure was invisible from
+ * the outside — the plugin loaded, the fold ran, the prompt contribution was
+ * assembled — which is why the shapes are all attempted here and pinned by test.
+ *
+ * @param data - the `tool/result` event data.
+ * @returns the call id, or `undefined` when none of the known shapes carry one.
+ */
+export function callIdOf(data: unknown): string | undefined {
   if (typeof data !== 'object' || data === null) return undefined
-  const source = (data as { source?: { callId?: unknown } }).source
-  if (typeof source?.callId === 'string') return source.callId
-  const block = (data as { message?: { content?: { toolCallId?: unknown }[] } }).message?.content?.[0]
+  const record = data as {
+    callId?: unknown
+    source?: { callId?: unknown }
+    message?: { source?: { callId?: unknown }; content?: { toolCallId?: unknown }[] }
+  }
+
+  // The production shape: the call id rides the result message's source.
+  if (typeof record.message?.source?.callId === 'string') return record.message.source.callId
+  // Tolerated extras: a flattened event, and the block-level id.
+  if (typeof record.callId === 'string') return record.callId
+  if (typeof record.source?.callId === 'string') return record.source.callId
+  const block = record.message?.content?.[0]
   return typeof block?.toolCallId === 'string' ? block.toolCallId : undefined
 }
 

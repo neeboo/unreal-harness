@@ -392,3 +392,47 @@ class BuildCommandTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class StagedBundleTests(unittest.TestCase):
+    """A rebuilt plugin must not be served from a cache keyed on its version.
+
+    `pnpm add file:<tarball>` keys its store entry on package name plus version.
+    Without a content-addressed destination, rebuilding a plugin that kept its
+    version reinstalls the *previous* code while reporting success -- which
+    happened, and made an A/B run against a stale bundle.
+    """
+
+    def test_staged_path_changes_when_the_bytes_change(self):
+        import asyncio
+        import hashlib
+        import tempfile
+        from pathlib import Path
+
+        from harness_harbor.dsh_agent import Dsh
+
+        agent = Dsh.__new__(Dsh)
+        agent._harness_dir = "/home/agent/.dsh/harness-harbor"
+        agent._home_dir = None
+
+        class FakeEnv:
+            async def exec(self, *args, **kwargs):
+                raise AssertionError("staging must not need a shell command")
+
+            async def upload_file(self, source, target):
+                return None
+
+        with tempfile.TemporaryDirectory() as temporary:
+            tarball = Path(temporary) / "pkg-0.1.0.tgz"
+            tarball.write_bytes(b"first build")
+            first = asyncio.run(Dsh._stage_local_bundle(agent, FakeEnv(), str(tarball)))
+            self.assertIn(hashlib.sha256(b"first build").hexdigest()[:12], first)
+            self.assertTrue(first.endswith(".tgz"))
+
+            # Same path, same name, different bytes: the destination must differ.
+            tarball.write_bytes(b"second build")
+            second = asyncio.run(Dsh._stage_local_bundle(agent, FakeEnv(), str(tarball)))
+            self.assertNotEqual(first, second)
+
+
+if __name__ == "__main__":
+    unittest.main()

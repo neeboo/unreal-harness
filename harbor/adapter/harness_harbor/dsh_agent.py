@@ -43,6 +43,7 @@ Design notes
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shlex
 import tempfile
@@ -499,8 +500,15 @@ echo "installed RSI bundles: {quoted}"
                 f"RSI bundle tarball not found: {source}. Build it with "
                 "`pnpm --filter <pkg> pack` from the repository root."
             )
+        # Content-address the destination. `pnpm add file:<tarball>` keys its
+        # store entry on the package name plus version, so reinstalling a
+        # *rebuilt* plugin that kept its version silently reuses the previously
+        # cached code. That is not hypothetical: it made a whole A/B run against a
+        # stale bundle while every check reported the install succeeding. A
+        # digest in the path makes each build a different spec.
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()[:12]
         harness_dir = await self._harness_dir_path(environment)
-        remote_path = f"{harness_dir}/{source.name}"
+        remote_path = f"{harness_dir}/{source.stem}-{digest}{source.suffix}"
         await environment.upload_file(source, remote_path)
         return remote_path
 
