@@ -371,6 +371,27 @@ rather than hiding inside an aggregate.
 
 
 
+### 5.8.1 Why the treatment arm now mounts two plugins
+
+The first matrix mounted only `rsi-trace`, and its result was a pass rate
+indistinguishable from bare `dsh`. That is the correct behaviour of an
+*observational* layer — recording a session cannot change it — but it also meant
+the treatment had no mechanism by which to differ, so the comparison could not
+have found anything.
+
+`dsh-plugins/rsi-guided/` supplies the mechanism. It folds the session's own tool
+calls into an attempt ledger and contributes a literal summary of failed attempts
+to the model's dynamic context, so an agent that has forgotten it already ran a
+failing command is shown the failure. It is delivered as a prompt *context* rather
+than a *section* specifically so the cacheable system-prompt prefix is untouched:
+a section whose text changed each step would invalidate DeepSeek's prompt cache on
+every step, which at $0.15 against $0.003 per million tokens would swamp any
+benefit the guidance produced.
+
+Its integration test asserts against the request the **model** received, not
+against the ledger. A correct fold that never reaches a prompt is an inert
+feature, and that was a real bug found in a container rather than a hypothetical.
+
 ### 5.9 The measured result
 
 Six trials per arm on three Terminal-Bench 4.0 tasks, two attempts each, identical
