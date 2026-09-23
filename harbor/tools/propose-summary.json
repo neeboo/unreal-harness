@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-09-23T00:10:27.957Z",
+  "model": "deepseek-flash",
+  "effort": "low",
+  "regime": {
+    "branchCount": 4,
+    "refinementDepth": 3,
+    "roundLimit": 8,
+    "maxParallelism": 4,
+    "trainWorlds": 120,
+    "heldOutWorlds": 120,
+    "revisionsRequested": 6
+  },
+  "handWritten": {
+    "pool": [
+      {
+        "policy": "depth-100",
+        "trainScore": 1.8626004711181356
+      },
+      {
+        "policy": "depth-75",
+        "trainScore": 1.8408762716406166
+      },
+      {
+        "policy": "depth-50",
+        "trainScore": 1.603429602691893
+      },
+      {
+        "policy": "depth-25",
+        "trainScore": 1.6215245185323484
+      },
+      {
+        "policy": "breadth-0",
+        "trainScore": 1.6121967314272512
+      }
+    ],
+    "bestOnTrain": "depth-100",
+    "bestOnTrainScore": 1.8626004711181356
+  },
+  "proposals": [
+    {
+      "index": 0,
+      "accepted": true,
+      "policyId": "balanced-explore-exploit",
+      "rationale": "Explore mixed actions for the first two rounds to reveal diverse branches, then intensify the highest-scoring lineage.",
+      "ruleCount": 3,
+      "trainScore": 1.9016442738056663,
+      "promptTokens": 533,
+      "completionTokens": 8071,
+      "cachedPromptTokens": 384
+    },
+    {
+      "index": 1,
+      "accepted": true,
+      "policyId": "twelve-open-then-best",
+      "rationale": "Front-load exploration by opening twelve branches to sample lineage quality, then commit all remaining attempts to the highest-scoring branch.",
+      "ruleCount": 2,
+      "trainScore": 1.8762005225064964,
+      "promptTokens": 554,
+      "completionTokens": 7945,
+      "cachedPromptTokens": 256
+    },
+    {
+      "index": 2,
+      "accepted": false,
+      "error": "reply contained no JSON object",
+      "rawText": "",
+      "promptTokens": 573,
+      "completionTokens": 8192,
+      "cachedPromptTokens": 384
+    }
+  ],
+  "invented": {
+    "acceptedIds": [
+      "balanced-explore-exploit",
+      "twelve-open-then-best"
+    ],
+    "bestOnTrain": "balanced-explore-exploit",
+    "bestOnTrainScore": 1.9016442738056663,
+    "meanTrainScore": 1.8889223981560814,
+    "acceptanceRate": 0.6666666666666666
+  },
+  "heldOut": {
+    "handWrittenBest": {
+      "policy": "depth-100",
+      "coverage": 0.9416666666666667,
+      "meanScore": 1.7237319002784717
+    },
+    "inventedBest": {
+      "policy": "balanced-explore-exploit",
+      "coverage": 1,
+      "meanScore": 1.7735598083542763
+    },
+    "inventedBeatsHandWritten": true,
+    "deltaMeanScore": 0.04982790807580462
+  },
+  "selectionGuarantee": {
+    "dreamSelected": "balanced-explore-exploit",
+    "dreamIncumbent": "depth-100",
+    "monotone": true,
+    "stopReason": "proposer-stopped"
+  },
+  "tokenUsage": {
+    "promptTokens": 1660,
+    "completionTokens": 24208,
+    "cachedPromptTokens": 1024
+  }
+}

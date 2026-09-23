@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-09-22T23:54:29.962Z",
+  "generator": "packages/policy/src/synthetic.ts",
+  "regime": {
+    "branchCount": 4,
+    "refinementDepth": 3,
+    "roundLimit": 8,
+    "maxParallelism": 4
+  },
+  "worlds": {
+    "train": 120,
+    "held_out": 120
+  },
+  "train_worlds": 120,
+  "held_out_worlds": 120,
+  "pool": [
+    {
+      "policy": "depth-100",
+      "coverage": 0.9416666666666667,
+      "mean_score": 1.7237319002784717,
+      "mean_regret": 0.028647352520249768
+    },
+    {
+      "policy": "depth-75",
+      "coverage": 0.8666666666666667,
+      "mean_score": 1.6558701988855182,
+      "mean_regret": 0.09650905391320282
+    },
+    {
+      "policy": "depth-50",
+      "coverage": 0.7083333333333334,
+      "mean_score": 1.5492412688114507,
+      "mean_regret": 0.2031379839872705
+    },
+    {
+      "policy": "depth-25",
+      "coverage": 0.725,
+      "mean_score": 1.5581732553927174,
+      "mean_regret": 0.1942059974060038
+    },
+    {
+      "policy": "breadth-0",
+      "coverage": 0.725,
+      "mean_score": 1.5683162521868292,
+      "mean_regret": 0.1840630006118923
+    }
+  ],
+  "loose_budget_coverage": [
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "selected": "depth-100",
+  "selected_coverage": 0.9416666666666667,
+  "selected_mean_score": 1.7237319002784717,
+  "incumbent_coverage": 0.9416666666666667,
+  "incumbent_mean_score": 1.7237319002784717,
+  "transferred": true,
+  "distinct_in_train": 5,
+  "monotone": false
+}

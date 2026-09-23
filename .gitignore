@@ -24,6 +24,10 @@ bench-out/**/report.md
 .dsh/
 .dsh-home/
 
+# --- python tooling (the harbor/ helper scripts) ---
+__pycache__/
+*.pyc
+
 # --- editor / OS ---
 .DS_Store
 .idea/

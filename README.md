@@ -25,10 +25,12 @@ Two build systems, one repository, and the split is deliberate.
 | `dsh-plugins/rsi-trace/` | **TypeScript** | The dsh plugin: `rsi/node` event, `rsi/discoveryTree` projection, `ctx.rsiTrace`, and the replay engine. Built inside a dsh checkout |
 | `dsh-plugins/rsi-context/` | **TypeScript** | The dsh context policy: scores the session surface, prices the reductions, hands spans to the mounted compaction engine. Built inside a dsh checkout — see [`dsh-plugins/README.md`](dsh-plugins/README.md) |
 | `packages/judgment/` | TypeScript | Typed cheap judgments: a zero-cost structural provider, a TypeSafe Jev adapter, chunk scoring, cache-aware pricing, a capability catalogue |
-| `packages/policy/` | TypeScript | The dreaming loop: replay-scored policy improvement, β sweeps, a versioned policy store |
+| `packages/policy/` | TypeScript | The dreaming loop: replay-scored policy improvement, β sweeps, a versioned policy store, a safe compiler for model-proposed policies, and a synthetic-landscape experiment |
+| `harbor/tools/` | Python + shell | The public-benchmark harness: a runner for the two arms, a results extractor, a peak/off-peak cost model, and the report generator |
+| `harbor/` (adapter) | Python | `harness_harbor.dsh_agent` — the Harbor adapter that drives `dsh` inside a task container, plus its unit tests |
 | `packages/workspace/` | TypeScript | Per-node workspace snapshots: hard-linked forks with a copy-on-write boundary |
 | `packages/bench/` | TypeScript | The benchmark: a DeepSeek-driven equal-budget A/B, a real code-optimization task, an out-of-process evaluator, and the report generator |
-| `BENCHMARK.md` | — | Which standards apply, what has been measured, what has not, and the exact Harbor commands to close the gap |
+| `BENCHMARK.md` | — | Which standards apply, what has been measured, what has not, and the exact commands to reproduce each measurement |
 | `BENCHMARK-REPORT.html` | — | The rendered result page for the latest run — open it directly, no server needed |
 | `RSI-HARNESS.md` | — | The design study: five axes, integration matrix, risks, and the claims that did *not* survive scrutiny |
 | `PHASE0-VERIFICATION.md` | — | Four load-bearing assumptions, each verified against the real `dsh` runtime, with the port details a first-time integrator gets wrong |

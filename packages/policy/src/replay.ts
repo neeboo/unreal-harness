@@ -77,6 +77,16 @@ export class ReplayWorld {
   /** Branch heads in creation order. */
   readonly rootIds: readonly string[]
   readonly size: number
+  /**
+   * The highest score recorded anywhere in the tree.
+   *
+   * This is the ceiling a replay can reach: no strategy over this history can
+   * reveal a score that was never recorded. `replayScore` measures an
+   * allocation against its own revealed best, so comparing the two answers the
+   * question a benchmark actually asks — did this strategy find what the
+   * history already contained?
+   */
+  readonly bestScore: number | undefined
 
   constructor(nodes: readonly RecordedNode[]) {
     const byId = new Map<string, RecordedNode>()
@@ -133,6 +143,13 @@ export class ReplayWorld {
     this.children = children
     this.rootIds = roots.map(node => node.nodeId)
     this.size = nodes.length
+
+    let ceiling: number | undefined
+    for (const node of nodes) {
+      if (node.score === undefined) continue
+      if (ceiling === undefined || node.score > ceiling) ceiling = node.score
+    }
+    this.bestScore = ceiling
   }
 
   /** Look up a recorded node. */

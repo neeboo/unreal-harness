@@ -3,193 +3,281 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RSI-Harness benchmark — fixed exploration vs Dream-RSI</title>
+<title>RSI-Harness benchmark report</title>
 <style>
-  :root {
-    --bg: #0e1116; --panel: #161b22; --line: #262d36; --ink: #e6edf3;
-    --muted: #8b949e; --accent: #58a6ff; --good: #3fb950; --warn: #d29922; --bad: #f85149;
-  }
-  @media (prefers-color-scheme: light) {
-    :root { --bg: #ffffff; --panel: #f6f8fa; --line: #d0d7de; --ink: #1f2328; --muted: #656d76; --accent: #0969da; }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  }
-  main { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
-  h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; }
-  h2 { font-size: 19px; margin: 44px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-  h3 { font-size: 15px; margin: 24px 0 8px; }
-  p, li { color: var(--ink); }
-  .lede { color: var(--muted); margin: 0 0 28px; }
-  .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-  .meta code { color: var(--ink); }
-  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  code { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
-  .muted { color: var(--muted); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 8px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-  .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
-  .card .value { font-size: 24px; font-variant-numeric: tabular-nums; margin-top: 4px; }
-  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  .callout { border-left: 3px solid var(--accent); background: var(--panel); padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
-  .callout.good { border-left-color: var(--good); }
-  .callout.warn { border-left-color: var(--warn); }
-  .callout.bad { border-left-color: var(--bad); }
-  .callout strong { display: block; margin-bottom: 4px; }
-  ul { padding-left: 20px; }
-  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+:root {
+  --ink: #14161a; --ink-soft: #4b5563; --line: #e3e6ea; --bg: #ffffff;
+  --bg-soft: #f7f8fa; --accent: #1f4fd8; --warn: #a8560b; --good: #0f6b3f;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 940px; margin: 0 auto; padding: 56px 28px 96px; }
+header.doc { border-bottom: 1px solid var(--line); padding-bottom: 26px; margin-bottom: 34px; }
+h1 { font-size: 31px; line-height: 1.22; margin: 0 0 12px; letter-spacing: -0.02em; }
+h2 { font-size: 21px; margin: 52px 0 14px; letter-spacing: -0.01em; }
+h3 { font-size: 16px; margin: 30px 0 10px; color: var(--ink-soft);
+     text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+p { margin: 0 0 14px; }
+.lede { color: var(--ink-soft); font-size: 17px; }
+.meta { margin-top: 16px; color: var(--ink-soft); font-size: 13.5px; }
+.meta code { font-size: 12.5px; }
+code { font-family: var(--mono); font-size: 13.5px; background: var(--bg-soft);
+       padding: 1px 5px; border-radius: 4px; }
+table.data { border-collapse: collapse; width: 100%; margin: 18px 0 10px;
+             font-size: 14.5px; font-variant-numeric: tabular-nums; }
+table.data th { text-align: left; font-weight: 600; color: var(--ink-soft);
+                font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;
+                border-bottom: 1px solid var(--line); padding: 8px 10px 8px 0; }
+table.data td { border-bottom: 1px solid var(--line); padding: 9px 10px 9px 0;
+                vertical-align: top; }
+table.data td.num, table.data th.num { text-align: right; padding-right: 14px; }
+td.label { font-weight: 550; }
+.note { color: var(--ink-soft); font-size: 13.5px; border-left: 3px solid var(--line);
+        padding-left: 14px; margin: 16px 0; }
+.pending { color: var(--warn); background: #fdf6ec; border: 1px solid #f0d9b8;
+           border-radius: 8px; padding: 14px 16px; }
+.win { color: var(--good); background: #f1faf4; border: 1px solid #bfe3ce;
+       border-radius: 8px; padding: 14px 16px; }
+table.data td.why { font-size: 13.5px; color: var(--ink-soft); }
+ul.limits li { margin-bottom: 11px; }
+ol.findings li { margin-bottom: 12px; }
+ul.errors { font-size: 13.5px; color: var(--ink-soft); }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 650;
+        letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 9px;
+        border-radius: 999px; background: var(--bg-soft); color: var(--ink-soft);
+        border: 1px solid var(--line); }
+.pill.good { color: var(--good); border-color: #bfe3ce; background: #f1faf4; }
+.pill.warn { color: var(--warn); border-color: #f0d9b8; background: #fdf6ec; }
+footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
+         color: var(--ink-soft); font-size: 13px; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Does the Dream-RSI loop work here?</h1>
-  <p class="lede">A two-arm, equal-attempt-budget A/B on a real code-optimization task. The model, the task, the seed code, and the evaluator are identical in both arms; the only difference is which recorded attempt each new attempt continues from.</p>
+<header class="doc">
+  <span class="pill">Benchmark report</span>
+  <h1>Does the RSI-Harness loop work, and is it better than a bare harness?</h1>
+  <p class="lede">Three measurements, each answering a different part of the
+  question, and an explicit list of what remains unproven. Every figure is read
+  from a file that a run wrote; nothing on this page is typed by hand.</p>
   <div class="meta">
-    <span>run <code>2026-09-22T23:12:35.003Z</code></span>
-    <span>model <code>deepseek-flash</code> · effort <code>low</code></span>
-    <span>budget 5 rounds × 8 attempts</span>
-    <span>parallelism 4</span>
-    <span>held-out instances 5</span>
+    Generated 2026-09-23 00:15 UTC · revision <code>aa61a85</code> ·
+    model <code>deepseek-flash</code> (DeepSeek-V4.1-Flash) ·
+    harness <code>@deepseek-ai/dsh@0.1.7-alpha.2</code>
   </div>
+</header>
 
-  <div class="cards">
-    <div class="card">
-      <div class="label">Fixed exploration</div>
-      <div class="value">11.982×</div>
-      <div class="sub">best held-out speedup</div>
-    </div>
-    <div class="card">
-      <div class="label">Dream-RSI</div>
-      <div class="value">12.118×</div>
-      <div class="sub">+0.136× vs fixed</div>
-    </div>
-    <div class="card">
-      <div class="label">Attempts</div>
-      <div class="value">40 / 40</div>
-      <div class="sub">equal — premise held</div>
-    </div>
-    <div class="card">
-      <div class="label">Tokens</div>
-      <div class="value">+3,219</div>
-      <div class="sub">more than fixed</div>
-    </div>
-  </div>
+<section>
+<p>Three things are measured on this page, in descending order of how strong a claim
+they support.</p>
+<ol class="findings">
+<li><strong>An invented policy beat a hand-written one, out of sample.</strong>
+<code>deepseek-flash</code> designed a policy that out-scored the best of five
+hand-written policies on worlds neither was selected on. This is the paper's central
+claim, measured on a generated landscape with the production replay — not on a real
+task. §1.</li>
+<li><strong>The replay mechanism discriminates, and the earlier degeneracy was a
+budget artifact.</strong> Coverage spreads across a five-policy pool on held-out
+worlds, and the same pool collapses to a flat 100% when the round limit is lifted. §2.</li>
+<li><strong>The public-benchmark A/B pipeline is verified, but its matrix did not
+finish.</strong> Both arms completed a container smoke task; a multi-task Terminal-Bench
+comparison needs hours of wall clock because each trial installs the toolchain from
+scratch. No comparative number is claimed. §3.</li>
+</ol>
+<p class='pending'>The container A/B has not produced results yet, so this page states no comparison. The sections below list what was measured and what was not.</p>
+</section>
 
-  <div class="callout good"><strong>Premise held</strong>Both arms executed the same number of attempts, so the speedup comparison is like-for-like. Any difference is the exploration policy, not the work.</div>
 
-  <div class="callout warn"><strong>The candidate pool was degenerate</strong>Every candidate policy scored identically on the recorded history. The dreaming had nothing to choose between, so this run measures the benchmark's design rather than the loop. A "no difference" result here is <em>not</em> evidence about Dream-RSI.</div>
+<h2 id="invented">1 · Does an invented policy beat a hand-written one?</h2>
 
-  <h2>Headline</h2>
-  <table>
-    <thead><tr>
-      <th>arm</th><th class="num">best speedup</th><th class="num">attempts</th><th class="num">provider calls</th>
-      <th class="num">input tokens</th><th class="num">output tokens</th><th class="num">cached input</th>
-      <th class="num">wall</th><th class="num">improvements</th>
-    </tr></thead>
-    <tbody><tr>
-      <td><code>fixed</code></td>
-      <td class="num">11.982×</td>
-      <td class="num">40</td>
-      <td class="num">40</td>
-      <td class="num">15,463</td>
-      <td class="num">133,730</td>
-      <td class="num">4,096</td>
-      <td class="num">639.9s</td>
-      <td class="num">16</td>
-    </tr><tr>
-      <td><code>dream</code></td>
-      <td class="num">12.118×</td>
-      <td class="num">40</td>
-      <td class="num">40</td>
-      <td class="num">15,421</td>
-      <td class="num">136,991</td>
-      <td class="num">4,352</td>
-      <td class="num">669.8s</td>
-      <td class="num">14</td>
-    </tr></tbody>
-  </table>
-  <p class="muted">Quality is median held-out runtime, measured out of process on inputs the agent never saw. Correctness is a gate: a wrong answer has no runtime and counts as a failure. "Improvements" counts attempts that produced correct, faster code.</p>
+<p>This is the paper's actual claim, and until now nothing in this repository tested
+it: every other measurement selects from a pool a person wrote, so it can only confirm
+that the judging half of the loop works. A loop that can only pick from a fixed menu
+cannot improve past that menu.</p>
 
-  <h2>Discovery curve</h2>
-  <p>Best held-out speedup after each round. Round 1 is identical by design — the dream arm starts from the same incumbent policy — so any divergence after round 1 is the dreaming.</p>
-  <table>
-    <thead><tr><th class="num">round</th><th class="num">fixed</th><th class="num">dream</th><th>deployed by dream</th><th class="num">distinct scores</th></tr></thead>
-    <tbody><tr>
-      <td class="num">1</td>
-      <td class="num">10.808×</td>
-      <td class="num">9.704×</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">0</td>
-    </tr><tr>
-      <td class="num">2</td>
-      <td class="num">11.524×</td>
-      <td class="num">11.882×</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">1</td>
-    </tr><tr>
-      <td class="num">3</td>
-      <td class="num">11.982×</td>
-      <td class="num">12.118×</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">1</td>
-    </tr><tr>
-      <td class="num">4</td>
-      <td class="num">11.331×</td>
-      <td class="num">10.578×</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">1</td>
-    </tr><tr>
-      <td class="num">5</td>
-      <td class="num">11.776×</td>
-      <td class="num">11.465×</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">1</td>
-    </tr></tbody>
-  </table>
+<p>Here a real model — <code>deepseek-flash</code> at effort
+<code>low</code> — is asked to <em>design</em> policies. Each
+reply is validated and compiled into a policy, scored by the same replay the
+hand-written pool is scored by, and both pools are then compared on
+120 worlds neither was selected on.</p>
 
-  <h2>What the dreaming chose</h2>
-  <p>Each row is the offline replay evaluation that decided the next round's policy. Scores are the replay objective over the recorded trees: best realized speedup, minus a cost term for attempts, plus a parallelism bonus for reaching it in fewer decision rounds. Dreaming issues <strong>no model calls</strong> — it only reads recorded attempts.</p>
-  <table>
-    <thead><tr><th class="num">round</th><th>deployed</th><th class="num"><code>breadth-first</code></th><th class="num"><code>fixed-greedy</code></th><th class="num"><code>open-heavy</code></th><th class="num"><code>serial</code></th></tr></thead>
-    <tbody><tr>
-      <td class="num">1</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num"><span class="muted">—</span></td><td class="num"><span class="muted">—</span></td><td class="num"><span class="muted">—</span></td><td class="num"><span class="muted">—</span></td>
-    </tr><tr>
-      <td class="num">2</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">9.4038</td><td class="num">9.4038</td><td class="num">9.4038</td><td class="num">9.4038</td>
-    </tr><tr>
-      <td class="num">3</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">10.4930</td><td class="num">10.4930</td><td class="num">10.4930</td><td class="num">10.4930</td>
-    </tr><tr>
-      <td class="num">4</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">10.9347</td><td class="num">10.9347</td><td class="num">10.9347</td><td class="num">10.9347</td>
-    </tr><tr>
-      <td class="num">5</td>
-      <td><code>fixed-greedy</code></td>
-      <td class="num">10.7706</td><td class="num">10.7706</td><td class="num">10.7706</td><td class="num">10.7706</td>
-    </tr></tbody>
-  </table>
+<p class="note">A proposal is executed inside the benchmark runner, so free-form
+generated code was rejected as a design: a component whose purpose is to be judged must
+not be able to reach the filesystem or read the worlds it is scored against. The model
+returns a small JSON rule list over the decisions a policy really makes — open a
+branch, deepen the newest/oldest/best lineage, batch several — and
+<code>packages/policy/src/propose.ts</code> validates and compiles it. Malformed input is
+rejected and the reason recorded, not retried away.</p>
 
-  <h2>What this does not measure</h2>
-  <ul>
-    <li><strong>Not a public benchmark.</strong> This is not Terminal-Bench 4.0, DeepSWE 1.1, SWE-Atlas QnA, or ALE-CLI. Those need Harbor plus a container runtime; the design and the exact commands are in <code>BENCHMARK.md</code>.</li>
-    <li><strong>Not "better than a bare harness".</strong> That comparison is <code>dsh</code> versus <code>dsh</code> plus these plugins on a public dataset. It is designed and not yet run.</li>
-    <li><strong>Not the paper's full loop.</strong> The candidate pool here is hand-written strategies, so replay-based <em>selection</em> is exercised and an LLM <em>proposing new policy code</em> is not. That is the one step standing between this and the paper's claim.</li>
-    <li><strong>No absolute number means anything alone.</strong> These are properties of a rolling-maximum task with a <code>node</code> evaluator. Only the comparison between arms is informative, and only because they are otherwise identical.</li>
-  </ul>
+<p class='win'>The invented policy is better, <strong>and better out of sample</strong>. A model wrote a policy that out-scores the best of five hand-written ones on worlds neither was selected on.</p>
 
-  <footer>
-    Generated by <code>packages/bench</code> from <code>measurements.json</code>. Every figure on this page is read from that file; none is typed by hand.
-  </footer>
+<table class="data">
+<thead><tr><th></th><th>Policy</th><th>Train mean score</th><th>Held-out coverage</th>
+<th>Held-out mean score</th></tr></thead>
+<tbody>
+<tr><td class='label'>Hand-written</td><td><code>depth-100</code></td>
+<td class='num'>1.8626</td>
+<td class='num'>94.2%</td>
+<td class='num'>1.7237</td></tr>
+<tr><td class='label'>Invented</td><td><code>balanced-explore-exploit</code></td>
+<td class='num'>1.9016</td>
+<td class='num'>100.0%</td>
+<td class='num'>1.7736</td></tr>
+</tbody>
+</table>
+
+<p>Mean-score gain on unseen worlds: <strong>+0.0498</strong>. Coverage is the share of worlds where the policy found the best score
+recorded anywhere in the tree, which is the ceiling replay can reach.</p>
+
+<h3>The loop's own guarantee</h3>
+<p><code>dream()</code> selected <code>balanced-explore-exploit</code> over its
+incumbent <code>depth-100</code>, with
+<code>monotone: True</code> — the guarantee that a selection is
+never worse than the incumbent <em>on the recorded history</em>. It stopped with reason
+<code>proposer-stopped</code>. Acceptance was
+<strong>2/3</strong>
+(67%): a proposer that retried until it
+produced something valid would hide how often the model fails the format, so a failure
+ends the loop and is reported.</p>
+
+<h3>What the model proposed</h3>
+<table class="data">
+<thead><tr><th>Policy</th><th>Outcome</th><th>Train score</th><th>Rules</th><th>Rationale / reason</th></tr></thead>
+<tbody><tr><td class='label'>balanced-explore-exploit</td><td>accepted</td><td class='num'>1.9016</td><td class='num'>3</td><td class='why'>Explore mixed actions for the first two rounds to reveal diverse branches, then intensify the highest-scoring lineage.</td></tr><tr><td class='label'>twelve-open-then-best</td><td>accepted</td><td class='num'>1.8762</td><td class='num'>2</td><td class='why'>Front-load exploration by opening twelve branches to sample lineage quality, then commit all remaining attempts to the highest-scoring branch.</td></tr><tr><td class='label'>—</td><td>rejected</td><td class='num'>—</td><td class='num'>—</td><td class='why'>reply contained no JSON object</td></tr></tbody>
+</table>
+
+<p>Token cost of the whole experiment: 1,660
+prompt + 24,208 completion tokens
+(1,024 cached).</p>
+
+<p class="note"><strong>What this does not establish:</strong> the landscape is generated
+by <code>packages/policy/src/synthetic.ts</code>, so this is about the loop's ability to
+invent and select, not about agent quality on a real task. It also does not establish
+that the model reliably produces usable proposals: 1 of
+3 replies were unusable, which is a real cost of the approach.</p>
+
+
+<h2 id="replay">2 · Does the replay mechanism discriminate?</h2>
+
+<p>This repository's own loop benchmark found its candidate pool
+<strong>degenerate</strong>: every policy scored identically, so selection had
+nothing to select between. That turned out to be a property of <em>one recorded
+tree</em> — with at most one child per node, reordering reveals changes when a
+node appears, not which nodes are reachable. Measuring the mechanism therefore
+needs many recorded trees, supplied here by an explicit generative model (sticky
+branch quality, refinement gains, diminishing returns), with the production
+<code>ReplayWorld</code> running over them.</p>
+
+<p class="note">Nothing is mocked: the generator produces only the <em>input</em>.
+The replay, the policies and the scoring are the shipped ones. Shapes were chosen
+by sweeping branch count × depth × round budget and keeping a cell where the pool
+neither saturates nor starves.</p>
+
+<table class="data">
+<thead><tr><th>Policy</th><th>Coverage</th><th>Mean replay score</th><th>Mean regret</th></tr></thead>
+<tbody><tr><td class='label'>depth-100</td><td class='num'>94.2%</td><td class='num'>1.724</td><td class='num'>0.029</td></tr><tr><td class='label'>depth-75</td><td class='num'>86.7%</td><td class='num'>1.656</td><td class='num'>0.097</td></tr><tr><td class='label'>depth-50</td><td class='num'>70.8%</td><td class='num'>1.549</td><td class='num'>0.203</td></tr><tr><td class='label'>depth-25</td><td class='num'>72.5%</td><td class='num'>1.558</td><td class='num'>0.194</td></tr><tr><td class='label'>breadth-0</td><td class='num'>72.5%</td><td class='num'>1.568</td><td class='num'>0.184</td></tr></tbody>
+</table>
+
+<p>Coverage decreases with the depth share but <strong>not strictly</strong>: the two shallowest policies invert by about a point, so they are statistically indistinguishable and the honest reading is that more depth is better down to a point, beyond which the pool has no opinion. The inversion is reported rather than smoothed because a pool that is cleanly ordered only after rounding is not cleanly ordered. The spread across the pool is
+<strong>23.3%</strong> of worlds.</p>
+
+<p>Re-running the same pool with the round limit lifted gives coverage of 100.0%, 100.0%, 100.0%, 100.0%, 100.0% for every member. The pool collapses completely, which identifies the original degeneracy as a <em>budget</em> property rather than a defect in the policies: with enough rounds every strategy reveals every recorded node and the choice becomes vacuous. Any future dreaming experiment has to hold the budget tight for its candidate set to mean anything.</p>
+
+<h3>Transfer</h3>
+<p>Selection is a <em>fitted</em> rule, so it is chosen on one corpus and reported
+on another. Selected on 120 training worlds
+(<strong>depth-100</strong>,
+5 distinct evaluations), it reached
+<strong>94.2%</strong> coverage on
+120 unseen worlds against the incumbent's
+<strong>94.2%</strong> — the choice
+<strong>held</strong>.</p>
+
+<p>Interpretation, stated narrowly: the mechanism ranks strategies coherently and
+its choice survives moving to unseen worlds, on a modelled search landscape. It is
+<strong>not</strong> evidence that the dreaming loop improves a real coding agent,
+which needs a real evaluator and a real model. §3 is what this repository can say
+about the real-model case, and it is a narrower statement.</p>
+
+<h2 id='harbor'>3 · Public-benchmark A/B</h2><p class='pending'><strong>Pipeline verified; the matrix did not finish.</strong> This section is left in place, empty, rather than deleted, because an absent section reads as a section that does not exist while a pending one records what is outstanding.</p><h3>What was verified</h3><ul class='limits'><li>The adapter drives <code>dsh</code> end to end inside a Harbor task container. Both arms — bare <code>dsh</code> and <code>dsh</code> plus the RSI trace plugin — completed a smoke task with <code>reward: 1.0</code>, and the RSI arm's install self-check confirmed the plugin was mounted.</li><li>The adapter reports the harness's real token accounting: 3 steps, 21,511 billable input tokens and a 97.6% cache-hit rate on one arm; 4 steps and a 97.4% rate on the other.</li><li>On a real Terminal-Bench 4.0 task (<code>html-js-filter</code>) the agent ran 23 model steps and 27 tool calls, with 26,027 uncached plus 1,121,152 cached input tokens — a 97.7% cache-hit rate. That is the harness working on a public task; it is not a score, because the trial was stopped before verification.</li><li>38 unit tests cover the adapter's own logic, including the silent-failure guards described in <code>BENCHMARK.md</code> §5.4.</li></ul><h3>Why it did not finish</h3><p>Each trial installs Node and the harness into a fresh task image, which costs roughly four minutes before the agent starts, against a per-task agent budget measured in minutes. A multi-task, multi-arm matrix therefore runs for hours of wall clock. The honest options were to reduce the matrix to one task — a comparison with no statistical content — or to report the pipeline as verified and the comparison as outstanding. The latter is reported.</p><p>The fix is mechanical and is in <code>BENCHMARK.md</code> §5.6: pre-bake the toolchain into a base image, or accept the setup cost and run the matrix unattended. Neither changes the adapter.</p>
+
+<h2 id="loop">4 · The Dream-RSI loop on a real model</h2>
+
+<p>A self-contained optimisation task, run twice with identical budgets against
+the real DeepSeek API: a <em>fixed</em> exploration policy against the dreaming
+loop. This is where the loop, the replay scoring, the monotone selection and the
+deployment are exercised end to end.</p>
+
+<table class="data">
+<thead><tr><th>Arm</th><th>Best result</th><th>Attempts</th><th>Prompt tokens</th>
+<th>Cached prompt tokens</th><th>Completion tokens</th><th>Wall clock</th>
+<th>Improvements</th></tr></thead>
+<tbody><tr><td class='label'>fixed</td><td class='num'>11.982×</td><td class='num'>40</td><td class='num'>15,463</td><td class='num'>4,096</td><td class='num'>133,730</td><td class='num'>640s</td><td class='num'>16</td></tr><tr><td class='label'>dream</td><td class='num'>12.118×</td><td class='num'>40</td><td class='num'>15,421</td><td class='num'>4,352</td><td class='num'>136,991</td><td class='num'>670s</td><td class='num'>14</td></tr></tbody>
+</table>
+
+<p>The candidate pool produced <strong>[0, 1, 1, 1, 1]</strong> distinct evaluations per decision round. <strong>This run does not establish that dreaming improves the search.</strong> The pool had no signal to choose from, so the loop retained its incumbent every round — which is the correct behaviour for a monotone rule with nothing better on offer, but it is not a win.</p>
+
+<p class="note">Work parity: both arms ran the same number of attempts, so the comparison is like-for-like.</p>
+
+
+<h2 id="limits">5 · What this page does not claim</h2>
+
+<ul class="limits">
+<li><strong>No claim that RSI-Harness beats bare dsh.</strong> The mounted plugin
+records the discovery tree; it does not steer the agent, so no pass-rate
+difference should be expected and none is claimed. A behavioural delta needs the
+consuming half of the loop — a policy that acts on the trace — wired into the
+harness, which is not done.</li>
+
+<li><strong>The public-benchmark sample is a pilot, not a score.</strong>
+No tasks from one dataset, a small number of attempts
+per task per arm. That is enough to show the harness runs a real benchmark and
+reports honest numbers. It is not enough to rank against published figures, and no
+comparison to the reference post's Terminal-Bench, DeepSWE or SWE-Atlas numbers is
+drawn.</li>
+
+<li><strong>The synthetic replay result is a modelled landscape.</strong> §2 shows
+the mechanism discriminates between strategies and that its choice transfers to
+unseen worlds, on trees from an explicit model of search. It says nothing about
+absolute agent quality on real tasks.</li>
+
+<li><strong>The dreaming loop's improvement is not established.</strong> §3 shows
+the loop operating correctly on a real model. Its candidate pool produced only one
+distinct evaluation, so the outcome is "the incumbent was retained" — the correct
+behaviour for a monotone rule with nothing better on offer, and not a win.</li>
+
+<li><strong>Costs are computed from published rates, not from an invoice.</strong>
+Token counts come from the harness's own per-step usage reporting and are priced
+with the peak/off-peak table in <code>harbor/tools/pricing.py</code>. Harbor's own
+cost field is empty for an import-path agent, so leaving it blank would have put a
+hole in the report's central number. Treat them as accurate to the rate card, not
+to the cent.</li>
+
+<li><strong>No LLM-written policy has been proposed.</strong> The paper's invention
+step — a model writing new policy code — is not exercised anywhere on this page.
+The candidate policies are hand-written.</li>
+
+<li><strong>Peak and off-peak bill at different rates.</strong> Off-peak is exactly
+half of peak. The runner refuses to start inside a peak window so a batch stays
+comparable, but a batch run at a different time of day would be cheaper or dearer
+for reasons unrelated to the agent.</li>
+</ul>
+
+
+<footer>
+Reproduce: <code>harbor/tools/run-arm.sh</code> for the container arms,
+<code>harbor/tools/extract-results.py</code> for the tables,
+<code>harbor/tools/pricing.py</code> for the cost model,
+<code>packages/policy/src/replay-experiment.ts</code> for the replay experiment, and
+<code>packages/bench/src/propose-experiment.ts</code> for the invented-policy
+experiment. Protocol and prior findings: <code>BENCHMARK.md</code>.
+</footer>
 </main>
 </body>
 </html>

@@ -34,7 +34,8 @@
   ],
   "scripts": {
     "bench": "node lib/cli.js",
-    "bench:report": "node lib/page.js"
+    "bench:report": "node lib/page.js",
+    "propose-experiment": "node lib/propose-cli.js"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

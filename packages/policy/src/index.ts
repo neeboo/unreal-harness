@@ -88,6 +88,40 @@ export type {
   WorldScore,
 } from './dream.ts'
 
+export {
+  POOL,
+  depthPolicy,
+  runReplayExperiment,
+  statFor,
+} from './replay-experiment.ts'
+export type { PolicyStat } from './replay-experiment.ts'
+
+export {
+  makeRandom,
+  syntheticCorpus,
+  syntheticWorld,
+} from './synthetic.ts'
+export type {
+  SyntheticCorpus,
+  SyntheticWorld,
+  SyntheticWorldOptions,
+} from './synthetic.ts'
+
+export {
+  PROPOSAL_SYSTEM_PROMPT,
+  ProposalCompileError,
+  compileProposal,
+  parseProposal,
+  proposalUserMessage,
+} from './propose.ts'
+export type {
+  CompiledProposal,
+  PolicyRule,
+  ProposedPolicy,
+  RuleAction,
+  RuleCondition,
+} from './propose.ts'
+
 export { PolicyStore, PolicyStoreError } from './store.ts'
 export type { PolicyRecord } from './store.ts'
 
