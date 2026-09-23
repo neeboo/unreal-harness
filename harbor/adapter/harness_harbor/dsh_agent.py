@@ -185,12 +185,18 @@ class Dsh(BaseInstalledAgent):
         ``--agent-kwarg rsi_plugin=<spec>`` replaces the class default outright.
         That matters because the RSI packages are not on the public registry:
         the default names only resolve once they are published, so a run from a
-        checkout must be able to point at a locally packed tarball without
-        editing the class.
+        checkout must be able to point at locally packed tarballs without editing
+        the class.
+
+        Several specs may be given, comma-separated, because the treatment is more
+        than one package and `--agent-kwarg` is a single key. An empty segment is
+        dropped rather than passed through, so a trailing comma is harmless.
         """
         override = self._rsi_plugin
         if override:
-            return (override,)
+            return tuple(
+                spec.strip() for spec in override.split(",") if spec.strip() != ""
+            )
         return self.RSI_BUNDLES
 
     @property
@@ -745,17 +751,26 @@ echo "installed RSI bundles: {quoted}"
 
 
 class DshRsi(Dsh):
-    """DeepSeek Harness with the RSI-Harness discovery-trace layer stacked on.
+    """DeepSeek Harness with the RSI-Harness layers stacked on.
 
     The single difference from :class:`Dsh` is :attr:`RSI_BUNDLES`, which is what
     makes an A/B comparison meaningful: same model, same effort, same budget,
-    same task text, same container image — one extra plugin.
+    same task text, same container image — extra plugins, nothing else.
     """
 
-    #: Default bundle spec. The RSI plugins are not on the public registry, so
-    #: this name only resolves once they are published; runs from a checkout
-    #: should pass `--agent-kwarg rsi_plugin=<path/to/rsi-trace.tgz>` instead.
-    RSI_BUNDLES: tuple[str, ...] = ("@deepseek-ai/dsh-rsi-trace",)
+    #: Default bundle specs. Neither package is on the public registry, so these
+    #: names only resolve once they are published; a run from a checkout passes
+    #: `--agent-kwarg rsi_plugin=<path/to/one.tgz>` instead, which *replaces* this
+    #: list — see :meth:`Dsh.bundles`.
+    #:
+    #: Both are mounted on purpose. `rsi-trace` observes, and an observational
+    #: layer cannot change an outcome; `rsi-guided` is the behavioural half, which
+    #: puts the recorded attempts back in the model's context. Mounting only the
+    #: first is what produced a measured difference of none, correctly.
+    RSI_BUNDLES: tuple[str, ...] = (
+        "@deepseek-ai/dsh-rsi-trace",
+        "@deepseek-ai/dsh-rsi-guided",
+    )
 
     @staticmethod
     @override

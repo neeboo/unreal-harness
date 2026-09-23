@@ -15,6 +15,8 @@
 set -uo pipefail
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+# One argument: the treatment's plugin tarballs, comma-separated. The adapter
+# splits on commas because `--agent-kwarg` is a single key.
 PLUGIN="${1:-}"
 RESULTS_DIR="${RESULTS_DIR:-/tmp/rsi-smoke/ab-results}"
 TRIALS_DIR="${TRIALS_DIR:-/tmp/rsi-smoke/ab-trials}"

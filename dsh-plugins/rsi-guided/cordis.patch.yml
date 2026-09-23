@@ -1,0 +1,8 @@
+# The rsi-guided bundle patch.
+#
+# Inserts the attempt-ledger projection and the prompt section that reads it. It
+# depends on nothing from rsi-trace at the event level: the ledger folds the
+# session's own tool events, so the two bundles can be mounted independently.
+- insert:
+    - id: rsi-guided
+      name: '@deepseek-ai/dsh-rsi-guided'

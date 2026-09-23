@@ -228,6 +228,17 @@ class BundleResolutionTests(unittest.TestCase):
         agent._flag_kwargs["rsi_plugin"] = "/tmp/rsi-trace.tgz"
         self.assertEqual(agent.bundles(), ("/tmp/rsi-trace.tgz",))
 
+    def test_cli_override_accepts_several_bundles(self):
+        """The treatment is more than one package, and --agent-kwarg is one key."""
+        agent = self._WithBundles(model_name="deepseek-flash")
+        agent._flag_kwargs["rsi_plugin"] = "/tmp/a.tgz, /tmp/b.tgz"
+        self.assertEqual(agent.bundles(), ("/tmp/a.tgz", "/tmp/b.tgz"))
+
+    def test_a_trailing_comma_is_harmless(self):
+        agent = self._WithBundles(model_name="deepseek-flash")
+        agent._flag_kwargs["rsi_plugin"] = "/tmp/a.tgz,"
+        self.assertEqual(agent.bundles(), ("/tmp/a.tgz",))
+
     def test_no_bundles_when_neither_is_set(self):
         self.assertEqual(_agent(model_name="deepseek-flash").bundles(), ())
 
@@ -250,8 +261,18 @@ class ArmSeparationTests(unittest.TestCase):
     def test_bare_arm_stacks_no_extra_bundles(self):
         self.assertEqual(Dsh.RSI_BUNDLES, ())
 
-    def test_rsi_arm_stacks_the_trace_bundle(self):
-        self.assertEqual(DshRsi.RSI_BUNDLES, ("@deepseek-ai/dsh-rsi-trace",))
+    def test_rsi_arm_stacks_both_layers(self):
+        """The treatment mounts the observer *and* the behavioural half.
+
+        Mounting only `rsi-trace` was measured to change nothing, which is what an
+        observational layer should do. `rsi-guided` is the part that can move an
+        outcome, because it puts the recorded attempts back in the model's
+        context.
+        """
+        self.assertEqual(
+            DshRsi.RSI_BUNDLES,
+            ("@deepseek-ai/dsh-rsi-trace", "@deepseek-ai/dsh-rsi-guided"),
+        )
 
     def test_arms_share_the_same_profile_and_overlay(self):
         bare = _agent(model_name="deepseek-flash")
