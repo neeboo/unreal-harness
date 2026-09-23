@@ -584,6 +584,26 @@ Token cost of the whole experiment: 1,660 prompt +
 24,208 completion tokens
 (1,024 cached), across 3 proposal calls.
 
+## 6.1 A Harbor bug this work surfaced but did not chase
+
+Two tasks (`heat-pump-warranty` and `cumulative-layout-shift`) fail to build under
+Harbor with:
+
+```
+failed to solve: build tag cannot contain a digest
+```
+
+It is **not** the toolchain graft: the identical Dockerfile builds by hand and
+under an explicit `docker compose -f ... build`, and a renamed copy of the task
+fails the same way. A digest reference is reaching `docker buildx bake`, which
+refuses a digest as a build tag, and the source is not any `docker_image` field in
+the task — stripping those did not clear it. Reproducing it needs a compose
+invocation matching Harbor's generated one, which was not reconstructed here.
+
+Recorded rather than fixed because it blocks exactly one thing: those two tasks
+cannot join a matrix. The measurements in §5 were all taken on tasks that build,
+so nothing above depends on it.
+
 ## 7. What this repository does **not** claim
 
 Stated plainly, because a benchmark page that only lists wins is an advertisement:
