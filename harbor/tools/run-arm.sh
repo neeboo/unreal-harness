@@ -58,14 +58,17 @@ AGENT_MULTIPLIER="${AGENT_MULTIPLIER:-0.06}"
 # the harness drives a real public benchmark and reports honest numbers, not
 # enough to rank against published figures. `BENCHMARK.md` §5 states that
 # boundary.
-# A LIGHT subset. The previous set (html-js-filter, shadow-relay) includes tasks
-# whose verifier runs a browser and whose agent path costs ~10 minutes per step, so
-# at any workable budget most attempts were cut off mid-work and the pass rate
-# measured the budget rather than the agent. These three build from python-slim
-# (plus one node image), verify with pytest or node, and have instructions under
-# 1 kB. `cad-model` is lighter still but needs the agent to read a schematic image
-# and emit a STEP file, which is a vision task rather than a coding one.
-read -r -a TASKS <<< "${TASKS:-payments-pipeline-fix cumulative-layout-shift session-window-debug}"
+# A LIGHT subset, chosen by measuring what the *verifier* costs as well as the
+# agent. Earlier sets failed on one side or the other: html-js-filter and
+# shadow-relay run a browser in verification and cost minutes per agent step;
+# payments-pipeline-fix rebuilds a Kafka stack to grade. Both produced matrices
+# where every trial timed out or failed, so the pass rate measured the harness
+# rather than the agent.
+#
+# These three verify in 9-10 lines of shell around one pytest file, build from
+# python-slim, and pin the agent at 300s in their own task.toml, which is the
+# task author's statement that they are meant to be quick.
+read -r -a TASKS <<< "${TASKS:-interleaved-vigenere heat-pump-warranty legacy-utility-triage}"
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
 
