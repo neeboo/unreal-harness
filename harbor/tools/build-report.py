@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -116,12 +117,17 @@ def section_verdict(harbor: dict[str, Any] | None) -> str:
         )
 
     return (
-        f"<p>{headline} The two arms are identical except for one mounted plugin, "
-        "so this is the RSI layer's measured effect on task outcomes: "
-        "<strong>none</strong>, which is the expected result for a layer that only "
-        "observes. The trace plugin records the discovery tree; it does not yet "
-        "steer the agent, so it cannot change a pass rate. What it does change is "
-        "what the run leaves behind — the material the dreaming loop consumes.</p>"
+        f"<p>{headline} The two arms are identical except for one mounted plugin, so "
+        "this is the RSI layer's measured effect on task outcomes — and it is "
+        "<strong>not distinguishable from none</strong>. That is the result the design "
+        "predicts: the mounted plugin records the discovery tree, it does not steer the "
+        "agent, so it has no mechanism by which to change a pass rate. What it changes "
+        "is what the run leaves behind — the material the dreaming loop consumes, which "
+        "is what §1 and §2 measure.</p>"
+        "<p>The right reading is therefore not \"RSI won 2 to 1\" but \"the "
+        "observational layer costs nothing and changes nothing\", which is the property "
+        "the reference post claims and the property a treatment must have before it is "
+        "worth making behavioural.</p>"
     )
 
 
@@ -132,6 +138,119 @@ def _arm_cost(arm: dict[str, Any]) -> str:
     if scored == trials:
         return value
     return f"{value} <span class='note'>({scored}/{trials} measured)</span>"
+
+
+def wilson_interval(successes: int, trials: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson score interval for a proportion.
+
+    Used instead of the normal approximation because with a handful of trials and
+    rates near 0 or 1 the normal interval is simply wrong (it can exceed 1), and
+    this page's whole job is to avoid stating more than the data supports.
+    """
+    if trials == 0:
+        return (0.0, 1.0)
+    p = successes / trials
+    d = 1 + z * z / trials
+    centre = (p + z * z / (2 * trials)) / d
+    half = z * math.sqrt(p * (1 - p) / trials + z * z / (4 * trials * trials)) / d
+    return (max(0.0, centre - half), min(1.0, centre + half))
+
+
+def fisher_exact_two_sided(a: int, b: int, c: int, d: int) -> float:
+    """Two-sided Fisher exact p-value for a 2x2 table.
+
+    Chosen over a chi-square test because the expected counts here are tiny, which
+    is exactly when chi-square is invalid.
+    """
+    n = a + b + c + d
+    if n == 0:
+        return 1.0
+
+    def probability(a1: int) -> float:
+        b1 = a + b - a1
+        c1 = a + c - a1
+        d1 = d - (a - a1)
+        if min(b1, c1, d1) < 0:
+            return 0.0
+        return (
+            math.comb(a + b, a1) * math.comb(c + d, c1) / math.comb(n, a + c)
+        )
+
+    observed = probability(a)
+    total = 0.0
+    for a1 in range(max(0, a - d), min(a + b, a + c) + 1):
+        p_value = probability(a1)
+        if p_value <= observed + 1e-12:
+            total += p_value
+    return min(1.0, total)
+
+
+def section_significance(harbor: dict[str, Any] | None) -> str:
+    """Whether the observed difference is distinguishable from chance.
+
+    This exists because a pass-rate difference on a handful of tasks is the single
+    easiest thing to over-read, and a report that shows 2/6 against 1/6 without a
+    confidence interval is inviting exactly that.
+    """
+    if not harbor:
+        return ""
+    arms = {arm["arm"]: arm for arm in harbor.get("arms", [])}
+    bare, rsi = arms.get("bare"), arms.get("rsi")
+    if not bare or not rsi or not bare.get("scored") or not rsi.get("scored"):
+        return ""
+
+    bn, rn = bare["scored"], rsi["scored"]
+    bp, rp = bare["passed"], rsi["passed"]
+    b_lo, b_hi = wilson_interval(bp, bn)
+    r_lo, r_hi = wilson_interval(rp, rn)
+    p_value = fisher_exact_two_sided(bp, bn - bp, rp, rn - rp)
+    significant = p_value < 0.05
+
+    # Pairing: a task where both arms scored the same carries no information about
+    # which arm is better, so it is worth saying how much of the matrix did.
+    per_task: dict[str, dict[str, int]] = {}
+    for trial in harbor["trials"]:
+        task = trial["task_name"].split("/")[-1]
+        per_task.setdefault(task, {}).setdefault(trial["arm"], 0)
+        if trial["passed"]:
+            per_task[task][trial["arm"]] += 1
+    agreeing = sum(
+        1 for counts in per_task.values() if counts.get("bare") == counts.get("rsi")
+    )
+
+    verdict = (
+        "<strong>The difference is not distinguishable from chance.</strong> The "
+        "confidence intervals overlap almost completely and a two-sided Fisher exact "
+        "test on the pass/fail totals gives "
+        f"<code>p&nbsp;=&nbsp;{p_value:.2f}</code>. Reporting a winner from this would "
+        "be reporting noise."
+        if not significant
+        else "<strong>The difference is statistically significant at p&nbsp;&lt;&nbsp;0.05</strong>, "
+        "though on this many tasks the effect size is still estimated very loosely."
+    )
+
+    return f"""
+<h3>Is the difference real?</h3>
+<p>A pass-rate difference on a handful of tasks is the easiest thing in this
+document to over-read, so it is tested rather than eyeballed.</p>
+<table class="data">
+<thead><tr><th>Arm</th><th>Passed</th><th>Rate</th><th>95% confidence interval</th></tr></thead>
+<tbody>
+<tr><td class='label'>Bare dsh</td><td class='num'>{bp}/{bn}</td>
+<td class='num'>{fmt_pct(bp / bn)}</td>
+<td class='num'>{fmt_pct(b_lo)} – {fmt_pct(b_hi)}</td></tr>
+<tr><td class='label'>dsh + RSI trace</td><td class='num'>{rp}/{rn}</td>
+<td class='num'>{fmt_pct(rp / rn)}</td>
+<td class='num'>{fmt_pct(r_lo)} – {fmt_pct(r_hi)}</td></tr>
+</tbody>
+</table>
+<p>Two-sided Fisher exact test on the pass/fail totals: <code>p&nbsp;=&nbsp;{p_value:.2f}</code>.
+{verdict}</p>
+<p>The two arms reached the <strong>same</strong> outcome on {agreeing} of the
+{len(per_task)} tasks, so only the remaining {len(per_task) - agreeing} carried any
+information about which arm is better. That is the most useful number on this page for
+judging how much of the matrix was actually a comparison.</p>
+"""
 
 
 def _task_cost(rows: list[dict[str, Any]]) -> str:
@@ -339,6 +458,7 @@ out rather than folded into the pass rate.</p>
 <th>…with a reward above zero</th><th>No reward, no exception</th></tr></thead>
 <tbody>{''.join(timeout_rows)}</tbody>
 </table>
+{section_significance(harbor)}
 <p class="note">"With a reward above zero" is the column that matters: it means the
 agent had already finished the task and was killed while tidying up, which is a
 solved task. The other two are failed attempts.</p>
@@ -786,10 +906,12 @@ task. §1.</li>
 <li><strong>The replay mechanism discriminates, and the earlier degeneracy was a
 budget artifact.</strong> Coverage spreads across a five-policy pool on held-out
 worlds, and the same pool collapses to a flat 100% when the round limit is lifted. §2.</li>
-<li><strong>The public-benchmark A/B runs, and its matrix is still filling.</strong>
-The toolchain is pre-baked so trials no longer spend their budget installing Node, and
-both arms are producing scored trials on real Terminal-Bench 4.0 tasks. Until both arms
-have run the same trials, this page states no winner. §3.</li>
+<li><strong>The public-benchmark A/B is complete, and found no significant
+difference.</strong> Six trials per arm on three real Terminal-Bench 4.0 tasks, with the
+toolchain pre-baked so trials spend their budget on the task rather than on installing
+Node. The RSI arm passed 2/6 against the bare arm's 1/6 — a difference that is not
+distinguishable from chance (<code>p&nbsp;=&nbsp;1.00</code>), on a layer that only
+observes the session. §3.</li>
 </ol>
 {section_verdict(harbor)}
 </section>

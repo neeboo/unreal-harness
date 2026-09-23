@@ -8,7 +8,7 @@ Two different questions are being asked, and they need two different benchmarks.
 |---|---|---|
 | Does the Dream-RSI loop run end to end on a real model? | A controlled A/B where the **only** difference between arms is the exploration policy, on a task with a real evaluator | **Measured.** `packages/bench`, results in [`bench-out/main-low2/report.html`](bench-out/main-low2/report.html). The loop, replay scoring, monotone selection and deployment all work; the pool had no signal, so the retained incumbent is a correct no-op rather than a win (§3, §4) |
 | Can replay actually tell two strategies apart, or is the pool degenerate by construction? | Replay over many recorded trees from an explicit generative model, with a pool spanning the depth-versus-breadth axis | **Measured.** Coverage spreads 94.2% → 70.8% across five policies, the choice fitted on 120 training worlds transfers to 120 unseen ones, and the same pool collapses to a flat 100% when the round budget is lifted — so the original degeneracy was a *budget* property (§6) |
-| Is RSI-Harness better than a plain harness on public coding benchmarks? | Harbor-based runs on Terminal-Bench 4.0, bare-`dsh` against `dsh` + the RSI plugin | **Run as a pilot.** The arms pass the same tasks at the same cost; the layer currently only *observes*, so no pass-rate delta is expected and none is claimed (§5). Not enough tasks to rank against published figures |
+| Is RSI-Harness better than a plain harness on public coding benchmarks? | Harbor runs on Terminal-Bench 4.0, bare-`dsh` against `dsh` + the RSI plugin | **Measured, no significant difference.** 6 trials per arm over 3 tasks; RSI 2/6 against bare 1/6, Fisher exact `p = 1.00`. The layer only *observes*, so it has no mechanism to move a pass rate (§5.9) |
 
 The rest of this document says exactly which standards apply, and why the third
 question cannot be answered by the first two.
@@ -175,7 +175,7 @@ are ordered because a higher level is uninterpretable if a lower one fails.
 | **L0 — mechanism** | The replay → evaluate → select → deploy loop runs and never regresses on recorded history | Two-arm equal-attempt A/B on a real task with an out-of-process evaluator | ✅ **Measured** (§4) |
 | **L1 — overhead** | Mounting the plugins does not make a session more expensive | Same tasks through bare `dsh` and `dsh + rsi-trace`, in containers, same model and budget | ✅ **Measured** (§5) |
 | **L2 — routing** | A policy chosen by replay beats a hand-written fixed strategy at equal compute | Replay over many recorded trees, with a pool that demonstrably discriminates | ✅ **Measured on synthetic worlds** (§4.0.1, §6); ❌ not on real trees |
-| **L3 — public** | `dsh` + plugins beats bare `dsh` on a public benchmark | Harbor A/B on Terminal-Bench 4.0 | ⚠️ **Run as a pilot**; pass rates identical, because the mounted layer only observes (§5) |
+| **L3 — public** | `dsh` + plugins beats bare `dsh` on a public benchmark | Harbor A/B on Terminal-Bench 4.0 | ⚠️ **Run; no significant difference** — RSI 2/6 vs bare 1/6, `p = 1.00`, on a layer that only observes (§5.9) |
 
 Three properties of this ladder matter more than the rows:
 
@@ -371,6 +371,48 @@ rather than hiding inside an aggregate.
 
 
 
+### 5.9 The measured result
+
+Six trials per arm on three Terminal-Bench 4.0 tasks, two attempts each, identical
+model, harness version, Node version, task text and image. The only difference is the
+mounted plugin.
+
+| Task | Bare `dsh` | `dsh` + RSI trace |
+|---|---|---|
+| `html-js-filter` | 1/2 | 2/2 |
+| `session-window-debug` | 0/2 | 0/2 |
+| `shadow-relay` | 0/2 | 0/2 |
+
+| Arm | Passed | Rate | 95% CI | Timeouts | Scored despite a timeout |
+|---|---|---|---|---|---|
+| bare | 1/6 | 16.7% | 3.0% – 56.4% | 3 | 0 |
+| RSI | 2/6 | 33.3% | 9.7% – 70.0% | 4 | 2 |
+
+**This is not a win, and the page says so.** A two-sided Fisher exact test on the
+pass/fail totals gives `p = 1.00`; the two arms reached the *same* outcome on 2 of the
+3 tasks, so only one task carried any information about which arm is better. With six
+trials per arm the confidence intervals overlap almost completely.
+
+The honest reading is the one the design predicts: **the observational layer costs
+nothing and changes nothing.** It records the discovery tree; it does not steer the
+agent, so it has no mechanism by which to move a pass rate. What it changes is what the
+run leaves behind — the material §6 and §7 consume. That is a necessary property of a
+treatment arm before it is worth making behavioural, and it is now measured rather than
+assumed.
+
+Two details worth keeping:
+
+- **A timeout is not always a failure.** Two RSI trials scored **1.0 while carrying
+  `AgentTimeoutError`** — the agent had finished the task and was killed while tidying
+  up. Counting every timeout as a failure, which the first version of the accounting
+  did, would have recorded two solved tasks as losses.
+- **A timed-out trial records no token usage at all**, so its cost is *unknown*, not
+  zero. The page renders that as "unmeasured" rather than `$0.00000`.
+
+Cost, over the trials that could be priced: bare $0.5255 across 6 trials,
+RSI $0.2831 across 6 — but these cover different task mixes once timeouts
+drop out, so they are not comparable and no cost conclusion is drawn.
+
 ## 6. Does an invented policy beat a hand-written one? (the paper's actual claim)
 
 §4 ran the loop but could only select from a pool a person wrote, so it could not
@@ -450,13 +492,13 @@ Token cost of the whole experiment: 1,660 prompt +
 
 Stated plainly, because a benchmark page that only lists wins is an advertisement:
 
-- **No competitive public-benchmark number is claimed.** A Terminal-Bench 4.0 pilot
-  ran (§5), but on a small task subset with few attempts. It is evidence that the
-  harness drives a real benchmark and reports honestly, not a score to rank against
-  published figures. No DeepSWE, SWE-Atlas or ALE-CLI run has been executed.
-- **No "better than dsh" claim.** The A/B ran (§5) and showed no pass-rate delta,
-  which is what a purely observational layer predicts. The delta a reader might want
-  needs the layer wired into the agent's decisions, which is not done (§8).
+- **No competitive public-benchmark number is claimed.** A Terminal-Bench 4.0 A/B ran
+  (§5.9) — 6 trials per arm over 3 tasks — and found no significant difference. Six
+  trials per arm cannot rank against published figures, and no such comparison is
+  drawn. No DeepSWE, SWE-Atlas or ALE-CLI run has been executed.
+- **No "better than dsh" claim.** The A/B ran (§5.9) and found no difference
+  distinguishable from chance, which is what a purely observational layer predicts. A
+  real delta needs the layer wired into the agent's decisions, which is not done (§8).
 - **"Dream-RSI works" is bounded** to what §4 measured: the loop, the replay
   scoring, the monotone selection, and the deployment. The invention step is now
   exercised separately in §6, where a model-invented policy beat the hand-written pool
