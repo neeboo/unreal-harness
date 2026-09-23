@@ -188,3 +188,43 @@ threw `Cannot read properties of undefined (reading 'provider')` during
 construction and contributed nothing — mounted, loaded, and inert, which is the
 failure mode this whole directory keeps rediscovering. Its provider now defaults to
 the zero-cost heuristic one and its prices to the off-peak rate card.
+
+### The trap that already caught this once
+
+`npm publish --access public` **succeeded** for all three packages, and they are
+still not installable. That is the whole failure mode in one line:
+
+| check | result | meaning |
+|---|---|---|
+| `npm publish --access public` | `+ @unreal-harness/rsi-guided@0.1.0` | upload succeeded |
+| tarball URL, no credentials | `200`, 14 012 bytes, contents correct | the artifact is served |
+| packument `registry.npmjs.org/@unreal-harness%2Frsi-guided` | `404` | not discoverable |
+| `npm install` in a clean directory | `404 … or you do not have permission` | not installable |
+
+They were published **restricted**, which is npm's default for a scoped package,
+and the publishing token was not permitted to change that:
+
+```
+403 Forbidden - POST /-/package/@unreal-harness%2frsi-guided/access
+```
+
+Its grant was read-write on the packages themselves, not on the org, so it could
+publish but not set visibility. A `publishConfig.access: public` in the manifest
+does not rescue it either: that field drives the *publish* call, and the call is
+being refused for visibility, not for content.
+
+Either fix works:
+
+* **Web:** npmjs.com → the package → Settings → set visibility to Public. Three
+  packages, once each.
+* **Token:** publish with a token that has org-level read-write, which is allowed
+  to change visibility; `--access public` then takes effect by itself.
+
+Verify from a directory with **no `.npmrc`**, because the publishing token can see
+its own restricted packages and reports success either way:
+
+```sh
+cd "$(mktemp -d)" && npm init -y >/dev/null
+npm install @unreal-harness/rsi-guided@0.1.0 \
+  --registry=https://registry.npmjs.org/ --no-audit --no-fund
+```
