@@ -46,6 +46,12 @@ def _summarise_trial(result: dict[str, Any]) -> dict[str, Any]:
     if reward is None:
         reward = _deep_get(verifier, "rewards", "reward")
 
+    # A trial can both time out *and* be graded: the agent may finish the work
+    # and be killed while wrapping up, leaving a real reward next to an
+    # AgentTimeoutError. Observed, not hypothetical -- one run scored 1.0 with
+    # that exception attached. So the reward, when one exists, is the outcome,
+    # and the exception is recorded as context rather than overriding it.
+
     duration_sec = _duration_sec(result.get("started_at"), result.get("finished_at"))
 
     usage = TokenUsage(
@@ -88,6 +94,15 @@ def _summarise_trial(result: dict[str, Any]) -> dict[str, Any]:
         "duration_sec": duration_sec,
         "exception_type": exception.get("exception_type"),
         "exception_message": exception.get("exception_message"),
+        # True only when a trial was *cut short and still scored above zero*:
+        # the agent finished the work and was killed while wrapping up. A 0.0
+        # next to a timeout is an ordinary failed attempt, not a partial success,
+        # so the distinction is reward > 0 rather than reward is not None.
+        "scored_despite_timeout": bool(
+            exception.get("exception_type") == "AgentTimeoutError"
+            and reward is not None
+            and float(reward) > 0
+        ),
     }
 
 
@@ -112,7 +127,17 @@ def summarise(results_dir: Path) -> dict[str, Any]:
         trial["arm"] = _arm_for(job_name, trial)
         trials.append(trial)
 
-    return {"results_dir": str(results_dir), "arms": _by_arm(trials), "trials": trials}
+    summary = {"results_dir": str(results_dir), "arms": _by_arm(trials), "trials": trials}
+
+    # A batch that spans the peak/off-peak boundary prices identical work at two
+    # different rates, so its cost column is not one comparison. The runner used
+    # to *block* on the boundary, which turned a pricing subtlety into a
+    # multi-hour silent stall; reporting it here is the check that actually
+    # belongs at this point, because it uses each trial's own timestamp.
+    windows = {trial["pricing_window"] for trial in trials if trial.get("pricing_window")}
+    summary["mixed_pricing_windows"] = len(windows) > 1
+    summary["pricing_windows_seen"] = sorted(windows)
+    return summary
 
 
 def _job_name_for(result_path: Path, results_dir: Path) -> str:
@@ -145,7 +170,16 @@ def _by_arm(trials: list[dict[str, Any]]) -> list[dict[str, Any]]:
     arms: list[dict[str, Any]] = []
     for arm in sorted(grouped):
         rows = grouped[arm]
-        scored = [row for row in rows if row["reward"] is not None]
+        # A trial that produced no reward because the agent timed out is a
+        # *failed attempt*, not a missing one. Dropping it would report the
+        # pass rate of only the trials that finished -- which silently rewards
+        # an arm that timed out more often, the exact bias a comparison must
+        # not have.
+        scored = [
+            row
+            for row in rows
+            if row["reward"] is not None or row["exception_type"] is not None
+        ]
         passed = [row for row in scored if row["passed"]]
         arms.append(
             {
@@ -155,6 +189,29 @@ def _by_arm(trials: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "passed": len(passed),
                 "pass_rate": (len(passed) / len(scored)) if scored else None,
                 "errors": sum(1 for row in rows if row["exception_type"]),
+                # Three distinct things, because collapsing them hides the
+                # interesting one: a timeout with no reward is a failed attempt;
+                # a timeout with 0.0 is the same thing with the verifier having
+                # run; a timeout with a *positive* reward means the agent had
+                # already finished and was killed while tidying up.
+                "timeouts": sum(
+                    1 for row in rows if row["exception_type"] == "AgentTimeoutError"
+                ),
+                "timeouts_with_reward": sum(
+                    1
+                    for row in rows
+                    if row["exception_type"] == "AgentTimeoutError" and row["reward"] is not None
+                ),
+                "scored_despite_timeout": sum(
+                    1 for row in rows if row.get("scored_despite_timeout")
+                ),
+                "harness_errors": sum(
+                    1
+                    for row in rows
+                    if row["exception_type"]
+                    and row["exception_type"] != "AgentTimeoutError"
+                    and row["reward"] is None
+                ),
                 "mean_input_tokens": _mean(row["n_input_tokens"] for row in scored),
                 "mean_cache_tokens": _mean(row["n_cache_tokens"] for row in scored),
                 "mean_output_tokens": _mean(row["n_output_tokens"] for row in scored),

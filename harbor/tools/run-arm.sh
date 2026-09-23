@@ -11,6 +11,18 @@
 #   ./run-arm.sh DshRsi <trials-dir> <results-dir> [plugin.tgz]
 #
 # The task subset is fixed here, in one place, so both arms provably saw it.
+#
+# Environment:
+#   HARBOR_DIR    the unreal-agent Harbor project (default below)
+#   TASKS_ROOT    dataset directory of task folders
+#   TASKS         space-separated task names
+#   ATTEMPTS      attempts per task
+#
+# Prerequisites, in order of how easily they are missed:
+#   1. A pre-baked toolchain (`./prebake-toolchain.sh`). Without it each trial
+#      spends ~4 minutes installing Node and the harness, which is more than the
+#      agent budget, so the matrix never produces a scored trial.
+#   2. DEEPSEEK_API_KEY in the environment.
 
 set -uo pipefail
 
@@ -22,72 +34,61 @@ PLUGIN="${4:-}"
 HARBOR_DIR="${HARBOR_DIR:-/tmp/req_repos/ua/benchmarks/harbor}"
 TASKS_ROOT="${TASKS_ROOT:-/tmp/tb-probe/terminal-bench}"
 ATTEMPTS="${ATTEMPTS:-2}"
+
 # Terminal-Bench ships an 8-hour per-task agent budget. That is the wrong scale
 # for a comparison run, and it would also let one pathological task consume the
 # whole matrix, so the agent and setup phases are capped by *multiplier* (the
-# task's own value scaled down). The environment build timeout is left alone:
-# scaling that one down would fail image builds rather than shorten runs.
-# Harbor's agent-setup base is a fixed 360s (Trial._AGENT_SETUP_TIMEOUT_SEC), not
-# the task's value, so the multiplier scales THAT. 3.34 gives ~1200s, which Node
-# download + npm install + pnpm needs on a cold image.
+# task's own value scaled down). 0.03 of the 8-hour default is ~864s. This was
+# measured, not guessed: at 288s every trial ended in AgentTimeoutError with the
+# agent still working (23-63 model steps observed), and a timed-out trial yields
+# no reward at all -- so too tight a budget does not make the matrix faster, it
+# makes it produce nothing. The environment build timeout is left alone; scaling
+# that down would fail image builds rather than shorten runs.
+#
+# Harbor's agent-setup base is a fixed 360s (Trial._AGENT_SETUP_TIMEOUT_SEC),
+# not the task's value, so that multiplier scales 360. With a pre-baked
+# toolchain setup is under a minute, so the slack is unused; it is kept for
+# images where the toolchain is absent and npm must actually run.
 SETUP_MULTIPLIER="${SETUP_MULTIPLIER:-3.34}"
-AGENT_MULTIPLIER="${AGENT_MULTIPLIER:-0.0125}"
+AGENT_MULTIPLIER="${AGENT_MULTIPLIER:-0.03}"
 
 # A small, deliberately mixed subset: code authoring, debugging an existing
 # implementation, and log forensics. All three build from a slim Python base and
-# need no GPU. The subset is an environment variable so the report can name
-# exactly what ran, and so a larger run does not require editing this file.
-#
-# Three tasks with one attempt each is a *pilot*: enough to show the harness
-# drives a real public benchmark and reports honest numbers, not enough to rank
-# against published figures. `BENCHMARK.md` §5 states that boundary.
+# need no GPU. Three tasks with two attempts each is a *pilot*: enough to show
+# the harness drives a real public benchmark and reports honest numbers, not
+# enough to rank against published figures. `BENCHMARK.md` §5 states that
+# boundary.
 read -r -a TASKS <<< "${TASKS:-html-js-filter session-window-debug shadow-relay}"
+
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# DeepSeek bills peak hours at exactly double the off-peak rate, so it matters
+# which window a batch ran in -- but *blocking* on the boundary is worse than
+# the problem. An earlier revision slept until off-peak resumed; on a peak
+# afternoon that was a 166-minute stall with no output, which reads as a hung
+# harness for a reason the operator cannot see.
+#
+# So the window is reported, never enforced. The extractor re-derives it from
+# each trial's own start timestamp, which is the actual hazard: a batch that
+# spans both windows mixes two price levels inside one comparison.
+if [ -f "$SELF_DIR/pricing.py" ]; then
+  echo "--- pricing window ---"
+  python3 "$SELF_DIR/pricing.py" | head -2
+  echo "----------------------"
+fi
 
 cd "$HARBOR_DIR" || exit 1
 mkdir -p "$TRIALS_DIR" "$RESULTS_DIR"
 
 # A killed run must not leave orphaned trial containers behind: leftovers keep
-# writing into the results directory and silently duplicate trials, which is
-# how an A/B can end up comparing a run against itself.
+# writing into the results directory and silently duplicate trials, which is how
+# an A/B can end up comparing a run against itself.
 cleanup_orphans() {
   docker ps -a --format '{{.Names}}' 2>/dev/null \
     | grep -E '__env-(main|verifier)' \
     | xargs -r docker rm -f >/dev/null 2>&1 || true
 }
 trap cleanup_orphans EXIT
-
-# DeepSeek bills peak hours at exactly double the off-peak rate. A matrix that
-# straddles the boundary produces costs differing by 2x for reasons unrelated to
-# the agent, so refuse to start inside a peak window rather than poison the
-# comparison. The check lives here, not in the report, because by report time it
-# is too late to fix.
-# This script lives beside pricing.py, so resolve it relative to itself rather
-# than to a hard-coded checkout path.
-SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
-PRICING_PY="$SELF_DIR/pricing.py"
-[ -f "$PRICING_PY" ] || PRICING_PY=""
-if [ -n "${PRICING_PY:-}" ]; then
-  if python3 "$PRICING_PY" | head -1 | grep -q PEAK; then
-    WAIT_UNTIL="$(python3 - "$PRICING_PY" <<'PYEOF'
-import sys, datetime
-sys.path.insert(0, sys.argv[1].rsplit("/", 1)[0])
-from pricing import next_off_peak_start
-resume = next_off_peak_start(datetime.datetime.now(datetime.timezone.utc))
-print("" if resume is None else resume.isoformat())
-PYEOF
-)"
-    echo "currently in a DeepSeek PEAK pricing window (2x rates)."
-    if [ -n "$WAIT_UNTIL" ]; then
-      echo "off-peak resumes at $WAIT_UNTIL; waiting."
-      SECONDS_TO_WAIT=$(python3 -c "
-import datetime,sys
-target=datetime.datetime.fromisoformat('$WAIT_UNTIL')
-print(max(0,int((target-datetime.datetime.now(datetime.timezone.utc)).total_seconds())+30))")
-      echo "sleeping ${SECONDS_TO_WAIT}s"
-      sleep "$SECONDS_TO_WAIT"
-    fi
-  fi
-fi
 
 AGENT_ARGS=(--agent "harness_harbor.dsh_agent:${ARM}")
 if [ -n "$PLUGIN" ]; then

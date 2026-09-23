@@ -134,16 +134,24 @@ def section_harbor(harbor: dict[str, Any] | None) -> str:
             "<li>38 unit tests cover the adapter's own logic, including the silent-failure "
             "guards described in <code>BENCHMARK.md</code> §5.4.</li>"
             "</ul>"
-            "<h3>Why it did not finish</h3>"
-            "<p>Each trial installs Node and the harness into a fresh task image, which "
-            "costs roughly four minutes before the agent starts, against a per-task agent "
-            "budget measured in minutes. A multi-task, multi-arm matrix therefore runs for "
-            "hours of wall clock. The honest options were to reduce the matrix to one task "
-            "— a comparison with no statistical content — or to report the pipeline as "
-            "verified and the comparison as outstanding. The latter is reported.</p>"
-            "<p>The fix is mechanical and is in <code>BENCHMARK.md</code> §5.6: pre-bake "
-            "the toolchain into a base image, or accept the setup cost and run the matrix "
-            "unattended. Neither changes the adapter.</p>"
+            "<h3>The blocker, and the fix that removed it</h3>"
+            "<p>Each trial would otherwise install Node and the harness into a fresh task "
+            "image — roughly four minutes before the agent gets a single turn, against a "
+            "per-task agent budget measured in minutes. A multi-task, multi-arm matrix "
+            "therefore never finishes, however long it is left running.</p>"
+            "<p><code>harbor/tools/prebake-toolchain.sh</code> builds one image holding "
+            "Node, dsh and pnpm, and grafts a <code>COPY --from</code> stage into each "
+            "task's Dockerfile; the adapter detects <code>/opt/dsh-toolchain</code> and "
+            "copies from it. Setup fell from ~4 minutes to under a minute, with no network "
+            "fetch in the trial transcript at all.</p>"
+            "<p class='note'>The first attempt at this appeared to work and did not. Most "
+            "Terminal-Bench tasks ship <code>[environment] docker_image</code>, which makes "
+            "Harbor pull a registry image and never read the Dockerfile, so a grafted "
+            "Dockerfile is dead text. The failure was invisible to a <code>grep</code> for "
+            "'pre-baked', because the adapter's own script text contains that string — the "
+            "search matched the source of the check rather than its result. The script now "
+            "also comments out that field to force a local build, and the verification is "
+            "an absolute path plus a zero download count.</p>"
         )
 
     trials = harbor["trials"]
@@ -154,7 +162,7 @@ def section_harbor(harbor: dict[str, Any] | None) -> str:
         "<tr><th>Arm</th><th>Scored</th><th>Passed</th><th>Pass rate</th>"
         "<th>Mean billable input</th><th>Mean cache hit rate</th>"
         "<th>Mean output</th><th>Mean cost</th><th>Mean wall clock</th>"
-        "<th>Run errors</th></tr>"
+        "<th>Timeouts</th><th>Scored anyway</th><th>Other errors</th></tr>"
     )
     rows = []
     for key, label in (("bare", "Bare dsh"), ("rsi", "dsh + RSI trace")):
@@ -172,7 +180,9 @@ def section_harbor(harbor: dict[str, Any] | None) -> str:
             f"<td class='num'>{fmt_int(arm.get('mean_output_tokens'))}</td>"
             f"<td class='num'>{fmt_usd(arm.get('mean_cost_usd_priced'), 5)}</td>"
             f"<td class='num'>{fmt_num(arm.get('mean_duration_sec'), 1)}s</td>"
-            f"<td>{arm.get('errors', 0)}</td>"
+            f"<td class='num'>{arm.get('timeouts', 0)}</td>"
+            f"<td class='num'>{arm.get('scored_despite_timeout', 0)}</td>"
+            f"<td class='num'>{arm.get('harness_errors', 0)}</td>"
             "</tr>"
         )
 
@@ -240,6 +250,13 @@ mounted plugin.</p>
 <thead>{header}</thead>
 <tbody>{''.join(rows)}</tbody>
 </table>
+
+<p class="note"><strong>Timeouts are reported in three separate columns on purpose.</strong>
+A timeout with no reward is a failed attempt. A timeout with a reward of 0.0 is the
+same attempt with the verifier having run. A timeout <em>with a positive reward</em>
+means the agent had already finished the work and was killed while tidying up — that
+is a solved task, not a failure, and collapsing the three would misreport it. Counting
+them together was a real bug in the first version of this extractor.</p>
 
 <p class="note">Tokens are split because DeepSeek bills them differently: a
 cache hit costs $0.003/Mtok against $0.15/Mtok for a miss off-peak — a 50×

@@ -470,12 +470,17 @@ Stated plainly, because a benchmark page that only lists wins is an advertisemen
 
 ## 8. Next steps, in the order that makes each one meaningful
 
-1. **Wire an LLM proposer** into `dream()` — the only way to test the paper's actual
-   claim. Bounded: the seam exists, and the replay evaluation it needs is built.
-2. **Add the round-budgeted arm** so the parallelism effect is measured, not argued.
-3. **Scale the Harbor comparison.** The pipeline works (§5); what is missing is a
-   task subset and attempt count large enough to be a score rather than a pilot. The
-   commands and the runner are in `harbor/tools/run-arm.sh`.
-4. **Wire the loop into a live harness.** §6 shows invention beats hand-design on a
+1. **Scale the Harbor comparison.** The two blockers are now removed: the toolchain is
+   pre-baked (`harbor/tools/prebake-toolchain.sh`, ~4min of per-trial setup down to under
+   a minute) and the adapter's install path is fixed. What remains is choosing a task
+   subset and attempt count large enough to be a score rather than a pilot, and letting
+   it run unattended. `harbor/tools/run-arm.sh` drives both arms.
+2. **Wire the loop into a live harness.** §6 shows invention beats hand-design on a
    generated landscape; the missing piece is a real evaluator and a policy that acts on
-   a real session, so the same experiment runs against a real task.
+   a real session, so the same experiment runs against a real task. This is what would
+   turn §5's "no pass-rate delta, as predicted" into a measurement of an actual
+   intervention.
+3. **Add the round-budgeted arm** so the parallelism effect is measured, not argued.
+4. **Exercise the invention step repeatedly.** §6 reported one usable proposal per run
+   and a 2-of-3 format failure rate. A larger sample would show whether that is the
+   model's floor or an artifact of a single prompt.

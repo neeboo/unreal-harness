@@ -284,16 +284,46 @@ class Dsh(BaseInstalledAgent):
             await self._install_pnpm(environment)
         await self._write_layers(environment)
 
+    #: Where a pre-baked toolchain may be mounted. A task image can carry Node,
+    #: dsh and pnpm at this path (see ``harbor/tools/prebake-toolchain.sh``), in
+    #: which case install copies it instead of downloading anything.
+    PREBAKED_TOOLCHAIN = "/opt/dsh-toolchain"
+
     async def _install_node(self, environment: BaseEnvironment) -> None:
         """Install a pinned Node into ``~/.local``.
 
         Downloaded rather than taken from the distro because benchmark images
         range from Debian bookworm to Alpine, and dsh needs Node >= 22.
+
+        If ``/opt/dsh-toolchain`` exists, the download is skipped entirely. That
+        path exists to make a benchmark matrix finishable: a fresh download plus
+        an npm install costs roughly four minutes per trial, against an agent
+        budget measured in minutes, so without it a multi-task, multi-arm run is
+        hours of wall clock spent installing the same bytes.
         """
         script = f"""
 set -euo pipefail
 NODE_VERSION={shlex.quote(self._node_version)}
 NODE_ROOT="$HOME/.local/node"
+
+PREBAKED={shlex.quote(self.PREBAKED_TOOLCHAIN)}
+if [ -x "$PREBAKED/node/bin/node" ]; then
+  echo "using pre-baked toolchain at $PREBAKED"
+  mkdir -p "$HOME/.local/bin"
+  # Copy rather than symlink: the task may run as a different user than the one
+  # the toolchain was grafted into, and a symlink into another home is a
+  # permission error waiting to happen.
+  rm -rf "$NODE_ROOT"
+  cp -a "$PREBAKED/node" "$NODE_ROOT"
+  for b in node npm npx; do
+    cp -a "$PREBAKED/node/bin/$b" "$HOME/.local/bin/$b" 2>/dev/null || ln -sf "$NODE_ROOT/bin/$b" "$HOME/.local/bin/$b"
+  done
+  export PATH="$HOME/.local/bin:$PREBAKED/node/bin:$PATH"
+  node --version
+  npm --version
+  exit 0
+fi
+
 ARCH="$(uname -m)"
 case "$ARCH" in
   x86_64|amd64) NODE_ARCH=x64 ;;
@@ -339,8 +369,19 @@ npm --version
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/.local/node/bin:$PATH"
 export npm_config_prefix="$HOME/.local"
-if [ ! -f "$HOME/.local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js" ]; then
-  npm install --global --no-fund --no-audit {shlex.quote(f"@deepseek-ai/dsh@{version}")}
+
+PREBAKED={shlex.quote(self.PREBAKED_TOOLCHAIN)}
+if [ -f "$PREBAKED/lib/node_modules/@deepseek-ai/dsh/lib/bin.js" ]; then
+  echo "using pre-baked dsh from $PREBAKED"
+  mkdir -p "$HOME/.local/lib"
+  rm -rf "$HOME/.local/lib/node_modules/@deepseek-ai/dsh"
+  mkdir -p "$HOME/.local/lib/node_modules/@deepseek-ai"
+  cp -a "$PREBAKED/lib/node_modules/@deepseek-ai/dsh" \
+        "$HOME/.local/lib/node_modules/@deepseek-ai/dsh"
+else
+  if [ ! -f "$HOME/.local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js" ]; then
+    npm install --global --no-fund --no-audit {shlex.quote(f"@deepseek-ai/dsh@{version}")}
+  fi
 fi
 test -f "$HOME/.local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js"
 
@@ -361,10 +402,29 @@ echo "dsh ready: $VERSION_OUT"
 
     async def _install_pnpm(self, environment: BaseEnvironment) -> None:
         """Install pnpm, which ``dsh plugin add`` delegates to."""
-        script = """
+        script = f"""
 set -euo pipefail
 export PATH="$HOME/.local/node/bin:$HOME/.local/bin:$PATH"
 export npm_config_prefix="$HOME/.local"
+
+PREBAKED={shlex.quote(self.PREBAKED_TOOLCHAIN)}
+if [ -f "$PREBAKED/lib/node_modules/pnpm/bin/pnpm.cjs" ]; then
+  mkdir -p "$HOME/.local/lib/node_modules" "$HOME/.local/bin"
+  rm -rf "$HOME/.local/lib/node_modules/pnpm"
+  cp -a "$PREBAKED/lib/node_modules/pnpm" "$HOME/.local/lib/node_modules/pnpm"
+  # A one-line wrapper, written with `cat` rather than `printf` with line
+  # continuations: the exec layer collapses backslash-newline, which silently
+  # flattened the shebang onto the argument line and made the first word of the
+  # invocation a literal "#!/bin/sh".
+  cat > "$HOME/.local/bin/pnpm" <<'WRAPPER'
+#!/bin/sh
+exec "$HOME/.local/node/bin/node" "$HOME/.local/lib/node_modules/pnpm/bin/pnpm.cjs" "$@"
+WRAPPER
+  chmod +x "$HOME/.local/bin/pnpm"
+  "$HOME/.local/bin/pnpm" --version
+  exit 0
+fi
+
 if [ -x "$HOME/.local/bin/pnpm" ]; then
   "$HOME/.local/bin/pnpm" --version
   exit 0

@@ -67,7 +67,7 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
   question, and an explicit list of what remains unproven. Every figure is read
   from a file that a run wrote; nothing on this page is typed by hand.</p>
   <div class="meta">
-    Generated 2026-09-23 00:15 UTC · revision <code>aa61a85</code> ·
+    Generated 2026-09-23 02:27 UTC · revision <code>9335389</code> ·
     model <code>deepseek-flash</code> (DeepSeek-V4.1-Flash) ·
     harness <code>@deepseek-ai/dsh@0.1.7-alpha.2</code>
   </div>
@@ -90,7 +90,7 @@ finish.</strong> Both arms completed a container smoke task; a multi-task Termin
 comparison needs hours of wall clock because each trial installs the toolchain from
 scratch. No comparative number is claimed. §3.</li>
 </ol>
-<p class='pending'>The container A/B has not produced results yet, so this page states no comparison. The sections below list what was measured and what was not.</p>
+<p>Bare passed <strong>1/6</strong>, RSI passed <strong>2/2</strong>. The two arms are identical except for one mounted plugin, so this is the RSI layer's measured effect on task outcomes: <strong>none</strong>, which is the expected result for a layer that only observes. The trace plugin records the discovery tree; it does not yet steer the agent, so it cannot change a pass rate. What it does change is what the run leaves behind — the material the dreaming loop consumes.</p>
 </section>
 
 
@@ -205,7 +205,40 @@ its choice survives moving to unseen worlds, on a modelled search landscape. It 
 which needs a real evaluator and a real model. §3 is what this repository can say
 about the real-model case, and it is a narrower statement.</p>
 
-<h2 id='harbor'>3 · Public-benchmark A/B</h2><p class='pending'><strong>Pipeline verified; the matrix did not finish.</strong> This section is left in place, empty, rather than deleted, because an absent section reads as a section that does not exist while a pending one records what is outstanding.</p><h3>What was verified</h3><ul class='limits'><li>The adapter drives <code>dsh</code> end to end inside a Harbor task container. Both arms — bare <code>dsh</code> and <code>dsh</code> plus the RSI trace plugin — completed a smoke task with <code>reward: 1.0</code>, and the RSI arm's install self-check confirmed the plugin was mounted.</li><li>The adapter reports the harness's real token accounting: 3 steps, 21,511 billable input tokens and a 97.6% cache-hit rate on one arm; 4 steps and a 97.4% rate on the other.</li><li>On a real Terminal-Bench 4.0 task (<code>html-js-filter</code>) the agent ran 23 model steps and 27 tool calls, with 26,027 uncached plus 1,121,152 cached input tokens — a 97.7% cache-hit rate. That is the harness working on a public task; it is not a score, because the trial was stopped before verification.</li><li>38 unit tests cover the adapter's own logic, including the silent-failure guards described in <code>BENCHMARK.md</code> §5.4.</li></ul><h3>Why it did not finish</h3><p>Each trial installs Node and the harness into a fresh task image, which costs roughly four minutes before the agent starts, against a per-task agent budget measured in minutes. A multi-task, multi-arm matrix therefore runs for hours of wall clock. The honest options were to reduce the matrix to one task — a comparison with no statistical content — or to report the pipeline as verified and the comparison as outstanding. The latter is reported.</p><p>The fix is mechanical and is in <code>BENCHMARK.md</code> §5.6: pre-bake the toolchain into a base image, or accept the setup cost and run the matrix unattended. Neither changes the adapter.</p>
+
+<h2 id="harbor">3 · Public-benchmark A/B</h2>
+<p>3 tasks from <strong>Terminal-Bench 4.0</strong> (the dataset the
+reference post reports on), 8 trials, identical model
+(<code>deepseek-flash</code>), identical Node and harness versions, identical
+task text, same image per task. The only difference between the arms is one
+mounted plugin.</p>
+
+<table class="data">
+<thead><tr><th>Arm</th><th>Scored</th><th>Passed</th><th>Pass rate</th><th>Mean billable input</th><th>Mean cache hit rate</th><th>Mean output</th><th>Mean cost</th><th>Mean wall clock</th><th>Timeouts</th><th>Scored anyway</th><th>Other errors</th></tr></thead>
+<tbody><tr><td class='label'>Bare dsh</td><td>6</td><td>1</td><td class='num'>16.7%</td><td class='num'>5,387,199</td><td class='num'>99.3%</td><td class='num'>111,466</td><td class='num'>$0.17518</td><td class='num'>867.6s</td><td class='num'>3</td><td class='num'>0</td><td class='num'>0</td></tr><tr><td class='label'>dsh + RSI trace</td><td>2</td><td>2</td><td class='num'>100.0%</td><td class='num'>—</td><td class='num'>n/a</td><td class='num'>—</td><td class='num'>n/a</td><td class='num'>1169.0s</td><td class='num'>2</td><td class='num'>2</td><td class='num'>0</td></tr></tbody>
+</table>
+
+<p class="note"><strong>Timeouts are reported in three separate columns on purpose.</strong>
+A timeout with no reward is a failed attempt. A timeout with a reward of 0.0 is the
+same attempt with the verifier having run. A timeout <em>with a positive reward</em>
+means the agent had already finished the work and was killed while tidying up — that
+is a solved task, not a failure, and collapsing the three would misreport it. Counting
+them together was a real bug in the first version of this extractor.</p>
+
+<p class="note">Tokens are split because DeepSeek bills them differently: a
+cache hit costs $0.003/Mtok against $0.15/Mtok for a miss off-peak — a 50×
+spread. "Mean billable input" is therefore uncached + cached tokens, and the
+cache-hit rate is reported beside it. Pricing window for this batch:
+<strong>peak</strong>; peak hours bill at exactly double, so a
+matrix must not straddle the boundary.</p>
+
+<h3>Per task</h3>
+<table class="data">
+<thead><tr><th>Task</th><th>Bare</th><th>RSI</th><th>Bare cost</th><th>RSI cost</th></tr></thead>
+<tbody><tr><td class='label'>html-js-filter</td><td class='num'>1/2</td><td class='num'>2/2</td><td class='num'>$0.23626</td><td class='num'>$0.00000</td></tr><tr><td class='label'>session-window-debug</td><td class='num'>0/2</td><td class='num'>—</td><td class='num'>$0.28929</td><td class='num'>—</td></tr><tr><td class='label'>shadow-relay</td><td class='num'>0/2</td><td class='num'>—</td><td class='num'>$0.00000</td><td class='num'>—</td></tr></tbody>
+</table>
+<h3>Run errors</h3><p>These trials produced no reward. They are listed rather than dropped, because a trial that failed to run is not a task the agent failed to solve.</p><ul class='errors'><li><code>html-js-filter__UFGRWHj</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__Rx9NJBx</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>shadow-relay__rCie35z</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>html-js-filter__PPJFmHW</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li><li><code>html-js-filter__fE6NUpQ</code> — AgentTimeoutError: Agent execution timed out after 864.0 seconds</li></ul>
+
 
 <h2 id="loop">4 · The Dream-RSI loop on a real model</h2>
 
@@ -236,7 +269,7 @@ consuming half of the loop — a policy that acts on the trace — wired into th
 harness, which is not done.</li>
 
 <li><strong>The public-benchmark sample is a pilot, not a score.</strong>
-No tasks from one dataset, a small number of attempts
+3 tasks from one dataset, 3 attempts
 per task per arm. That is enough to show the harness runs a real benchmark and
 reports honest numbers. It is not enough to rank against published figures, and no
 comparison to the reference post's Terminal-Bench, DeepSWE or SWE-Atlas numbers is
