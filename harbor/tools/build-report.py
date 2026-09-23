@@ -249,6 +249,21 @@ def section_significance(harbor: dict[str, Any] | None) -> str:
         )
 
     return f"""
+<h3>The control: the harness works, the agent is what is slow</h3>
+<p>Every zero above raises the same question — is the task unreachable, or is the
+harness broken? Running the task with its own <strong>reference solution</strong>
+answers it. On <code>interleaved-vigenere</code> the oracle agent scored
+<strong>reward 1.0</strong>, passing 6 of 6 tests in 37 seconds.</p>
+<p>So the task is passable and the pipeline grades it correctly. What failed in the
+matrices was the <em>agent budget</em>: these tasks declare 28800 seconds of agent
+time in their own <code>task.toml</code>, and the matrices gave them 864. At the
+observed per-step cost of 30-60 seconds that buys roughly fifteen steps, against the
+20-60 a real attempt needs. The zeros were the budget expiring — not the layers
+failing, and not the harness misreporting.</p>
+<p>One consequence is worth stating plainly: <strong>no result on this page
+establishes that either layer helps or hurts</strong>, because no configuration has
+yet given the agent enough time to finish an attempt.</p>
+
 <h3>Is the difference real?</h3>
 <p>A pass-rate difference on a handful of tasks is the easiest thing in this
 document to over-read, so it is tested rather than eyeballed.</p>

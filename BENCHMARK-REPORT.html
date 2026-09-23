@@ -67,7 +67,7 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
   question, and an explicit list of what remains unproven. Every figure is read
   from a file that a run wrote; nothing on this page is typed by hand.</p>
   <div class="meta">
-    Generated 2026-09-23 04:41 UTC · revision <code>3d45b32</code> ·
+    Generated 2026-09-23 05:11 UTC · revision <code>9fafdb9</code> ·
     model <code>deepseek-flash</code> (DeepSeek-V4.1-Flash) ·
     harness <code>@deepseek-ai/dsh@0.1.7-alpha.2</code>
   </div>
@@ -255,6 +255,21 @@ out rather than folded into the pass rate.</p>
 <th>…with a reward above zero</th><th>No reward, no exception</th></tr></thead>
 <tbody><tr><td class='label'>Bare dsh</td><td class='num'>3</td><td class='num'>3</td><td class='num'>0</td><td class='num'>0</td></tr><tr><td class='label'>dsh + RSI trace</td><td class='num'>4</td><td class='num'>4</td><td class='num'>0</td><td class='num'>0</td></tr></tbody>
 </table>
+
+<h3>The control: the harness works, the agent is what is slow</h3>
+<p>Every zero above raises the same question — is the task unreachable, or is the
+harness broken? Running the task with its own <strong>reference solution</strong>
+answers it. On <code>interleaved-vigenere</code> the oracle agent scored
+<strong>reward 1.0</strong>, passing 6 of 6 tests in 37 seconds.</p>
+<p>So the task is passable and the pipeline grades it correctly. What failed in the
+matrices was the <em>agent budget</em>: these tasks declare 28800 seconds of agent
+time in their own <code>task.toml</code>, and the matrices gave them 864. At the
+observed per-step cost of 30-60 seconds that buys roughly fifteen steps, against the
+20-60 a real attempt needs. The zeros were the budget expiring — not the layers
+failing, and not the harness misreporting.</p>
+<p>One consequence is worth stating plainly: <strong>no result on this page
+establishes that either layer helps or hurts</strong>, because no configuration has
+yet given the agent enough time to finish an attempt.</p>
 
 <h3>Is the difference real?</h3>
 <p>A pass-rate difference on a handful of tasks is the easiest thing in this
