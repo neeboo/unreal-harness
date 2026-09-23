@@ -24,20 +24,27 @@ pnpm exec tsc -b packages/policy packages/bench >/dev/null
 node packages/policy/lib/replay-experiment.js --out harbor/tools/replay-summary.json >/dev/null
 echo "wrote harbor/tools/replay-summary.json"
 
+# Harbor extraction is optional and separate. The committed
+# harbor/tools/harbor-summary.json is the extracted comparison; re-extracting
+# needs the raw run trees, which are large and deliberately not kept in the
+# repository. Pass directories to refresh it, or leave it alone and the page
+# renders from the committed summary.
 if [ "${1:-}" = "--harbor" ]; then
   shift
   BARE="${1:?--harbor needs a results directory}"
   RSI="${2:-}"
-  mkdir -p /tmp/harbor-merged
-  rm -rf /tmp/harbor-merged/*
-  cp -R "$BARE" /tmp/harbor-merged/bare
-  if [ -n "$RSI" ]; then
-    cp -R "$RSI" /tmp/harbor-merged/rsi
+  if [ ! -d "$BARE" ]; then
+    echo "### 2/3 ERROR: $BARE does not exist; keeping the committed summary" >&2
+  else
+    mkdir -p /tmp/harbor-merged
+    rm -rf /tmp/harbor-merged/*
+    cp -R "$BARE" /tmp/harbor-merged/bare
+    [ -n "$RSI" ] && [ -d "$RSI" ] && cp -R "$RSI" /tmp/harbor-merged/rsi
+    echo "### 2/3 extract Harbor results"
+    python3 "$SELF_DIR/extract-results.py" /tmp/harbor-merged --out harbor/tools/harbor-summary.json
   fi
-  echo "### 2/3 extract Harbor results"
-  python3 "$SELF_DIR/extract-results.py" /tmp/harbor-merged --out harbor/tools/harbor-summary.json
 else
-  echo "### 2/3 Harbor extraction skipped (no --harbor)"
+  echo "### 2/3 Harbor extraction skipped; using the committed summary"
 fi
 
 echo "### 3/3 render the report page"

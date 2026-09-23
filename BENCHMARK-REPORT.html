@@ -67,7 +67,7 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
   question, and an explicit list of what remains unproven. Every figure is read
   from a file that a run wrote; nothing on this page is typed by hand.</p>
   <div class="meta">
-    Generated 2026-09-23 05:11 UTC · revision <code>9fafdb9</code> ·
+    Generated 2026-09-23 05:14 UTC · revision <code>713d112</code> ·
     model <code>deepseek-flash</code> (DeepSeek-V4.1-Flash) ·
     harness <code>@deepseek-ai/dsh@0.1.7-alpha.2</code>
   </div>
@@ -94,7 +94,7 @@ the timeout counts say why: most attempts were cut off mid-work rather than fini
 and failing. <strong>The agent budget, not the layers, is what this setup cannot see
 past.</strong> §3.</li>
 </ol>
-<p>Both arms passed <strong>0 of 6</strong> scored trials — identical pass rates. The two arms are identical except for one mounted plugin, so this is the RSI layer's measured effect on task outcomes — and it is <strong>not distinguishable from none</strong>. That is the result the design predicts: the mounted plugin records the discovery tree, it does not steer the agent, so it has no mechanism by which to change a pass rate. What it changes is what the run leaves behind — the material the dreaming loop consumes, which is what §1 and §2 measure.</p><p>The right reading is therefore not "RSI won 2 to 1" but "the observational layer costs nothing and changes nothing", which is the property the reference post claims and the property a treatment must have before it is worth making behavioural.</p>
+<p class='pending'><strong>Neither arm passed a single task, so no result on this page can attribute anything to either layer.</strong> 12 trials, 12 failures, 7 of them cut off by the agent budget rather than finishing. A comparison cannot separate two treatments when nothing in either succeeds, and reporting the two zeros as "identical pass rates" would dress up an absence of evidence as a finding.</p><p>The control below shows why: the same task scored <strong>1.0</strong> with its reference solution, so the task is passable and the harness grades correctly — the budget was the limit. See §1 and §2 for the measurements that <em>do</em> say something: the dreaming loop, and the invented policy that beat the hand-written pool.</p>
 </section>
 
 

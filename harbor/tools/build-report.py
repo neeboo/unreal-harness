@@ -103,31 +103,43 @@ def section_verdict(harbor: dict[str, Any] | None) -> str:
             "built to prevent.</p>"
         )
 
-    same_pass = bare.get("passed") == rsi.get("passed")
-    same_scored = bare.get("scored") == rsi.get("scored")
-    if same_pass and same_scored:
+    bare_passed, rsi_passed = bare.get("passed", 0), rsi.get("passed", 0)
+    timeouts = bare.get("timeouts", 0) + rsi.get("timeouts", 0)
+    total = bare.get("scored", 0) + rsi.get("scored", 0)
+
+    # Both arms passing nothing is NOT "identical pass rates" in any useful sense:
+    # there was no success for a difference to show up in, whatever the treatment
+    # did. Saying "identical" there would read as a finding when it is an absence
+    # of one, and it was the single most misleading sentence this page produced.
+    if bare_passed == 0 and rsi_passed == 0:
+        return (
+            f"<p class='pending'><strong>Neither arm passed a single task, so no result "
+            f"on this page can attribute anything to either layer.</strong> "
+            f"{total} trials, {total} failures, {timeouts} of them cut off by the agent "
+            "budget rather than finishing. A comparison cannot separate two treatments "
+            "when nothing in either succeeds, and reporting the two zeros as \"identical "
+            "pass rates\" would dress up an absence of evidence as a finding.</p>"
+            "<p>The control below shows why: the same task scored "
+            "<strong>1.0</strong> with its reference solution, so the task is passable "
+            "and the harness grades correctly — the budget was the limit. See §1 and §2 "
+            "for the measurements that <em>do</em> say something: the dreaming loop, and "
+            "the invented policy that beat the hand-written pool.</p>"
+        )
+
+    if bare_passed == rsi_passed and bare.get("scored") == rsi.get("scored"):
         headline = (
-            f"Both arms passed <strong>{bare['passed']} of {bare['scored']}</strong> "
+            f"Both arms passed <strong>{bare_passed} of {bare.get('scored')}</strong> "
             "scored trials — identical pass rates."
         )
     else:
         headline = (
-            f"Bare passed <strong>{bare['passed']}/{bare['scored']}</strong>, "
-            f"RSI passed <strong>{rsi['passed']}/{rsi['scored']}</strong>."
+            f"Bare passed <strong>{bare_passed}/{bare.get('scored')}</strong>, "
+            f"RSI passed <strong>{rsi_passed}/{rsi.get('scored')}</strong>."
         )
 
     return (
-        f"<p>{headline} The two arms are identical except for one mounted plugin, so "
-        "this is the RSI layer's measured effect on task outcomes — and it is "
-        "<strong>not distinguishable from none</strong>. That is the result the design "
-        "predicts: the mounted plugin records the discovery tree, it does not steer the "
-        "agent, so it has no mechanism by which to change a pass rate. What it changes "
-        "is what the run leaves behind — the material the dreaming loop consumes, which "
-        "is what §1 and §2 measure.</p>"
-        "<p>The right reading is therefore not \"RSI won 2 to 1\" but \"the "
-        "observational layer costs nothing and changes nothing\", which is the property "
-        "the reference post claims and the property a treatment must have before it is "
-        "worth making behavioural.</p>"
+        f"<p>{headline} The two arms are identical except for the mounted plugins. "
+        "Whether that difference is real is tested in §3 rather than asserted here.</p>"
     )
 
 
