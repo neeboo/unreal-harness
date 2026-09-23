@@ -50,7 +50,7 @@ ATTEMPTS="${ATTEMPTS:-2}"
 # toolchain setup is under a minute, so the slack is unused; it is kept for
 # images where the toolchain is absent and npm must actually run.
 SETUP_MULTIPLIER="${SETUP_MULTIPLIER:-3.34}"
-AGENT_MULTIPLIER="${AGENT_MULTIPLIER:-0.03}"
+AGENT_MULTIPLIER="${AGENT_MULTIPLIER:-0.06}"
 
 # A small, deliberately mixed subset: code authoring, debugging an existing
 # implementation, and log forensics. All three build from a slim Python base and
@@ -58,7 +58,14 @@ AGENT_MULTIPLIER="${AGENT_MULTIPLIER:-0.03}"
 # the harness drives a real public benchmark and reports honest numbers, not
 # enough to rank against published figures. `BENCHMARK.md` §5 states that
 # boundary.
-read -r -a TASKS <<< "${TASKS:-html-js-filter session-window-debug shadow-relay}"
+# A LIGHT subset. The previous set (html-js-filter, shadow-relay) includes tasks
+# whose verifier runs a browser and whose agent path costs ~10 minutes per step, so
+# at any workable budget most attempts were cut off mid-work and the pass rate
+# measured the budget rather than the agent. These three build from python-slim
+# (plus one node image), verify with pytest or node, and have instructions under
+# 1 kB. `cad-model` is lighter still but needs the agent to read a schematic image
+# and emit a STEP file, which is a vision task rather than a coding one.
+read -r -a TASKS <<< "${TASKS:-payments-pipeline-fix cumulative-layout-shift session-window-debug}"
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
 
